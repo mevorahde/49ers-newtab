@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>David's New Tab</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="script.js"></script>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <div class="weather-widget" id="weather-widget">
+        <div class="weather-icon" id="weather-icon">☀️</div>
+        <div class="weather-temp" id="weather-temp">--°</div>
+        <div class="weather-desc" id="weather-desc">--</div>
+        <div class="weather-location" id="weather-location">Locating...</div>
+      </div>
+
+      <div class="center-section">
+        <div class="welcome">WELCOME BACK, DAVID</div>
+        <div class="date" id="date"></div>
+        <div class="time" id="time"></div>
+      </div>
+
+      <div class="countdown-compact">
+        <div class="countdown-label">NEXT GAME</div>
+        <div class="countdown-value" id="countdown">-- DAYS</div>
+      </div>
+    </div>
+
+    <div class="search-container">
+      <input id="search-input" type="text" placeholder="Search the web" class="search-box">
+    </div>
+
+    <div class="favorites">
+      <a class="fav-item" href="https://theathletic.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=theathletic.com" alt="Athletic"><span>The Athletic</span></a>
+      <a class="fav-item" href="https://sfstandard.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=sfstandard.com" alt="SF Std"><span>SF Standard</span></a>
+      <a class="fav-item" href="https://thisweekinvideogames.com/" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=thisweekinvideogames.com" alt="TWIVG"><span>TWIVG</span></a>
+      <a class="fav-item" href="https://mlb.tv" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=mlb.tv" alt="MLB.TV"><span>MLB.TV</span></a>
+      <a class="fav-item" href="https://www.nba.com/games" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=nba.com" alt="NBA League Pass"><span>NBA League Pass</span></a>
+      <a class="fav-item" href="https://youtube.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=youtube.com" alt="YouTube"><span>YouTube</span></a>
+      <a class="fav-item" href="https://music.youtube.com/" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=music.youtube.com" alt="YouTube Music"><span>YouTube Music</span></a>
+      <a class="fav-item" href="https://www.audible.com/library/titles?ref=a_library_t_t1_navTop_pl0&pf_rd_p=b3535f82-37a5-4619-8b95-9edb26183570&pf_rd_r=QXZGNY6DB8MG37KTKRE9" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=audible.com" alt="Audible"><span>Audible</span></a>
+      <a class="fav-item" href="https://github.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=github.com" alt="GitHub"><span>GitHub</span></a>
+      <a class="fav-item" href="https://www.freecodecamp.org/signin" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=freecodecamp.org" alt="Free Code Camp"><span>Free Code Camp</span></a>
+      <a class="fav-item" href="https://forum.freecodecamp.org/" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=forum.freecodecamp.org" alt="Free Code Camp Forum"><span>Free Code Camp Forum</span></a>
+      <a class="fav-item" href="http://pythontutor.com/visualize.html#mode=edit" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=pythontutor.com" alt="Python Tutor"><span>Python Tutor</span></a>
+      <a class="fav-item" href="https://mevorahde.github.io/Git_Cheat_Sheet/" target="_blank"><img class="fav-icon" src="https://icons.duckduckgo.com/ip3/mevorahde.github.io.ico" alt="Git Cheat Sheet"><span>Git Cheat Sheet</span></a>
+      <a class="fav-item" href="https://mevorahde.github.io/venv_guide/" target="_blank"><img class="fav-icon" src="https://icons.duckduckgo.com/ip3/mevorahde.github.io.ico" alt="Python Virtual Env"><span>Python Virtual Env</span></a>
+
+
+
+    </div>
+
+    <div class="todo">
+      <div class="todo-title">TO‑DO LIST</div>
+
+      <div class="todo-input-row">
+        <input id="todo-input" type="text" placeholder="Add a new task...">
+        <button id="add-btn">Add</button>
+      </div>
+
+      <div class="todo-box">
+        <ul id="todo-list"></ul>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
+

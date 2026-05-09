@@ -176,9 +176,234 @@ document.getElementById("search-input").addEventListener("keydown", (e) => {
   }
 });
 
-function openSite(url) {
-  window.open(url, "_blank");
+const favoritesKey = "favorites";
+let favorites = loadFavorites();
+let editingIndex = null;
+let deletedFavorite = null;
+let toastTimeout = null;
+
+const favoritesContainer = document.getElementById("favorites");
+const contextMenu = document.getElementById("context-menu");
+const editSiteBtn = document.getElementById("edit-site-btn");
+const deleteSiteBtn = document.getElementById("delete-site-btn");
+const modalOverlay = document.getElementById("modal-overlay");
+const modalTitle = document.getElementById("modal-title");
+const siteNameInput = document.getElementById("site-name");
+const siteUrlInput = document.getElementById("site-url");
+const cancelSiteBtn = document.getElementById("cancel-site-btn");
+const saveSiteBtn = document.getElementById("save-site-btn");
+const toast = document.getElementById("toast");
+const toastMessage = document.getElementById("toast-message");
+const undoBtn = document.getElementById("undo-btn");
+const toastClose = document.getElementById("toast-close");
+
+function loadFavorites() {
+  const stored = localStorage.getItem(favoritesKey);
+  if (!stored) return getDefaultFavorites();
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) && parsed.length ? parsed : getDefaultFavorites();
+  } catch {
+    return getDefaultFavorites();
+  }
 }
+
+function getDefaultFavorites() {
+  return [
+    { name: "The Athletic - Bay Area", url: "https://theathletic.com/bayarea/" },
+    { name: "SF Standard", url: "https://sfstandard.com/" },
+    { name: "TWIVG", url: "https://thisweekinvideogames.com/" },
+    { name: "MLB.TV", url: "https://mlb.tv" },
+    { name: "NBA League Pass", url: "https://www.nba.com/games" },
+    { name: "YouTube", url: "https://youtube.com" },
+    { name: "YouTube Music", url: "https://music.youtube.com/" },
+    { name: "Audible", url: "https://www.audible.com/" },
+    { name: "GitHub", url: "https://github.com" },
+    { name: "Free Code Camp", url: "https://www.freecodecamp.org/" }
+  ];
+}
+
+function saveFavorites() {
+  localStorage.setItem(favoritesKey, JSON.stringify(favorites));
+}
+
+function domainFromUrl(value) {
+  try {
+    return new URL(value).hostname;
+  } catch {
+    return value;
+  }
+}
+
+function getFavicon(url) {
+  const domain = domainFromUrl(url);
+  return `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(domain)}`;
+}
+
+function renderFavorites() {
+  favoritesContainer.innerHTML = "";
+
+  favorites.forEach((site, index) => {
+    const link = document.createElement("a");
+    link.className = "fav-item";
+    link.href = site.url;
+    link.dataset.index = index;
+    link.innerHTML = `<img class="fav-icon" src="${getFavicon(site.url)}" alt="${site.name}"><span>${site.name}</span>`;
+    link.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      showContextMenu(event.pageX, event.pageY, index);
+    });
+    favoritesContainer.appendChild(link);
+  });
+
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.className = "fav-item fav-add";
+  addButton.innerHTML = `<span class="add-icon">+</span><span>Add site</span>`;
+  addButton.addEventListener("click", () => openSiteModal("add"));
+  favoritesContainer.appendChild(addButton);
+}
+
+function showContextMenu(x, y, index) {
+  contextMenu.style.left = `${x}px`;
+  contextMenu.style.top = `${y}px`;
+  contextMenu.classList.remove("hidden");
+  editingIndex = index;
+}
+
+function closeContextMenu() {
+  contextMenu.classList.add("hidden");
+}
+
+function openSiteModal(mode) {
+  modalTitle.textContent = mode === "edit" ? "Edit site" : "Add site";
+
+  if (mode === "edit" && editingIndex !== null) {
+    const site = favorites[editingIndex];
+    siteNameInput.value = site.name;
+    siteUrlInput.value = site.url;
+  } else {
+    siteNameInput.value = "";
+    siteUrlInput.value = "";
+    editingIndex = null;
+  }
+
+  modalOverlay.classList.remove("hidden");
+  siteNameInput.focus();
+}
+
+function closeSiteModal() {
+  modalOverlay.classList.add("hidden");
+}
+
+function normalizeUrl(value) {
+  if (!value) return "";
+  const trimmed = value.trim();
+  try {
+    return new URL(trimmed).href;
+  } catch {
+    try {
+      return new URL(`https://${trimmed}`).href;
+    } catch {
+      return "";
+    }
+  }
+}
+
+function handleSaveSite() {
+  const name = siteNameInput.value.trim();
+  const url = normalizeUrl(siteUrlInput.value);
+
+  if (!name || !url) {
+    alert("Please enter a valid site name and URL.");
+    return;
+  }
+
+  if (editingIndex !== null && favorites[editingIndex]) {
+    favorites[editingIndex] = { name, url };
+  } else {
+    favorites.push({ name, url });
+  }
+
+  saveFavorites();
+  renderFavorites();
+  closeSiteModal();
+  closeContextMenu();
+}
+
+function handleDeleteSite() {
+  if (editingIndex === null || editingIndex < 0 || editingIndex >= favorites.length) return;
+
+  deletedFavorite = {
+    item: favorites[editingIndex],
+    index: editingIndex
+  };
+
+  favorites.splice(editingIndex, 1);
+  saveFavorites();
+  renderFavorites();
+  closeContextMenu();
+  showToast("Top site removed");
+}
+
+function showToast(message) {
+  toastMessage.textContent = message;
+  toast.classList.remove("hidden");
+
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+  }
+
+  toastTimeout = setTimeout(() => {
+    hideToast();
+  }, 5000);
+}
+
+function hideToast() {
+  toast.classList.add("hidden");
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+    toastTimeout = null;
+  }
+}
+
+function undoDelete() {
+  if (!deletedFavorite) return;
+
+  favorites.splice(deletedFavorite.index, 0, deletedFavorite.item);
+  saveFavorites();
+  renderFavorites();
+  deletedFavorite = null;
+  hideToast();
+}
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("#context-menu")) {
+    closeContextMenu();
+  }
+});
+
+editSiteBtn.addEventListener("click", () => {
+  openSiteModal("edit");
+});
+
+deleteSiteBtn.addEventListener("click", handleDeleteSite);
+
+cancelSiteBtn.addEventListener("click", () => {
+  closeSiteModal();
+});
+
+saveSiteBtn.addEventListener("click", handleSaveSite);
+modalOverlay.addEventListener("click", (event) => {
+  if (event.target === modalOverlay) {
+    closeSiteModal();
+  }
+});
+
+undoBtn.addEventListener("click", undoDelete);
+toastClose.addEventListener("click", hideToast);
+
+renderFavorites();
 
 // -------------------------
 // TO‑DO LIST LOGIC

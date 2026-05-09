@@ -35,24 +35,35 @@
       <input id="search-input" type="text" placeholder="Search the web" class="search-box">
     </div>
 
-    <div class="favorites">
-      <a class="fav-item" href="https://theathletic.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=theathletic.com" alt="Athletic"><span>The Athletic</span></a>
-      <a class="fav-item" href="https://sfstandard.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=sfstandard.com" alt="SF Std"><span>SF Standard</span></a>
-      <a class="fav-item" href="https://thisweekinvideogames.com/" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=thisweekinvideogames.com" alt="TWIVG"><span>TWIVG</span></a>
-      <a class="fav-item" href="https://mlb.tv" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=mlb.tv" alt="MLB.TV"><span>MLB.TV</span></a>
-      <a class="fav-item" href="https://www.nba.com/games" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=nba.com" alt="NBA League Pass"><span>NBA League Pass</span></a>
-      <a class="fav-item" href="https://youtube.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=youtube.com" alt="YouTube"><span>YouTube</span></a>
-      <a class="fav-item" href="https://music.youtube.com/" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=music.youtube.com" alt="YouTube Music"><span>YouTube Music</span></a>
-      <a class="fav-item" href="https://www.audible.com/library/titles?ref=a_library_t_t1_navTop_pl0&pf_rd_p=b3535f82-37a5-4619-8b95-9edb26183570&pf_rd_r=QXZGNY6DB8MG37KTKRE9" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=audible.com" alt="Audible"><span>Audible</span></a>
-      <a class="fav-item" href="https://github.com" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=github.com" alt="GitHub"><span>GitHub</span></a>
-      <a class="fav-item" href="https://www.freecodecamp.org/signin" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=freecodecamp.org" alt="Free Code Camp"><span>Free Code Camp</span></a>
-      <a class="fav-item" href="https://forum.freecodecamp.org/" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=forum.freecodecamp.org" alt="Free Code Camp Forum"><span>Free Code Camp Forum</span></a>
-      <a class="fav-item" href="http://pythontutor.com/visualize.html#mode=edit" target="_blank"><img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=pythontutor.com" alt="Python Tutor"><span>Python Tutor</span></a>
-      <a class="fav-item" href="https://mevorahde.github.io/Git_Cheat_Sheet/" target="_blank"><img class="fav-icon" src="https://icons.duckduckgo.com/ip3/mevorahde.github.io.ico" alt="Git Cheat Sheet"><span>Git Cheat Sheet</span></a>
-      <a class="fav-item" href="https://mevorahde.github.io/venv_guide/" target="_blank"><img class="fav-icon" src="https://icons.duckduckgo.com/ip3/mevorahde.github.io.ico" alt="Python Virtual Env"><span>Python Virtual Env</span></a>
+    <div class="favorites" id="favorites"></div>
 
+    <div id="context-menu" class="context-menu hidden">
+      <button id="edit-site-btn" class="context-action">Edit site</button>
+      <button id="delete-site-btn" class="context-action">Delete site</button>
+    </div>
 
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div class="site-modal">
+        <div class="modal-title" id="modal-title">Add site</div>
+        <label>
+          Site name
+          <input id="site-name" type="text" placeholder="Name" autocomplete="off">
+        </label>
+        <label>
+          Site URL
+          <input id="site-url" type="url" placeholder="https://example.com" autocomplete="off">
+        </label>
+        <div class="modal-actions">
+          <button id="cancel-site-btn" type="button">Cancel</button>
+          <button id="save-site-btn" type="button">Save</button>
+        </div>
+      </div>
+    </div>
 
+    <div id="toast" class="toast hidden">
+      <span id="toast-message"></span>
+      <button id="undo-btn" class="toast-action">Undo</button>
+      <button id="toast-close" class="toast-close">✕</button>
     </div>
 
     <div class="todo">

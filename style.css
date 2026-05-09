@@ -171,6 +171,16 @@ body {
   transform: translateY(-2px);
 }
 
+.fav-add {
+  border-style: dashed;
+  color: #b30000;
+}
+
+.fav-add .add-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
 .fav-icon {
   width: 24px;
   height: 24px;
@@ -181,6 +191,136 @@ body {
   text-align: center;
   line-height: 1.2;
   word-break: break-word;
+}
+
+.context-menu {
+  position: absolute;
+  z-index: 20;
+  min-width: 140px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  padding: 4px 0;
+}
+
+.context-action {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 13px;
+  color: #7a0a0a;
+  cursor: pointer;
+}
+
+.context-action:hover {
+  background: #ffe5d9;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.site-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 22px;
+  width: min(420px, calc(100% - 32px));
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+}
+
+.modal-title {
+  font-family: "NinersBlock", sans-serif;
+  font-size: 18px;
+  color: #b30000;
+  margin-bottom: 16px;
+}
+
+.site-modal label {
+  display: block;
+  font-size: 12px;
+  color: #7a0a0a;
+  margin-bottom: 12px;
+}
+
+.site-modal input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #b30000;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.modal-actions button {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#cancel-site-btn {
+  background: #fff8f2;
+  color: #7a0a0a;
+  border: 1px solid #b30000;
+}
+
+#save-site-btn {
+  background: #b30000;
+  color: white;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff8f2;
+  border: 1px solid #b30000;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  z-index: 40;
+}
+
+.toast-action {
+  background: transparent;
+  border: none;
+  color: #b30000;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  color: #7a0a0a;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
 }
 
 /* Todo section - compact */

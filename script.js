@@ -199,12 +199,25 @@ const toastClose = document.getElementById("toast-close");
 
 function loadFavorites() {
   const stored = localStorage.getItem(favoritesKey);
-  if (!stored) return getDefaultFavorites();
+  const defaults = getDefaultFavorites();
+
+  if (!stored) return defaults;
+
   try {
     const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) && parsed.length ? parsed : getDefaultFavorites();
+    if (!Array.isArray(parsed)) return defaults;
+
+    const merged = [...parsed];
+    defaults.forEach((defaultSite) => {
+      const exists = merged.some(
+        (site) => site.url === defaultSite.url || site.name === defaultSite.name
+      );
+      if (!exists) merged.push(defaultSite);
+    });
+
+    return merged;
   } catch {
-    return getDefaultFavorites();
+    return defaults;
   }
 }
 
@@ -219,7 +232,11 @@ function getDefaultFavorites() {
     { name: "YouTube Music", url: "https://music.youtube.com/" },
     { name: "Audible", url: "https://www.audible.com/" },
     { name: "GitHub", url: "https://github.com" },
-    { name: "Free Code Camp", url: "https://www.freecodecamp.org/" }
+    { name: "Free Code Camp", url: "https://www.freecodecamp.org/" },
+    { name: "Free Code Camp Forum", url: "https://forum.freecodecamp.org/" },
+    { name: "Python Tutor", url: "http://pythontutor.com/visualize.html#mode=edit" },
+    { name: "Git Cheat Sheet", url: "https://mevorahde.github.io/Git_Cheat_Sheet/" },
+    { name: "Python Virtual Env", url: "https://mevorahde.github.io/venv_guide/" }
   ];
 }
 

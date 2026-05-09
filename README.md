@@ -14,6 +14,11 @@ A beautiful, fully-featured Chrome/Brave extension that replaces your new tab pa
   - Location reverse-geocoding via Nominatim
 - **Quick Search** - Google search directly from the new tab
 - **Favorites Grid** - One-click access to your most-visited sites
+  - **Right-click to edit or delete** - Context menu for managing favorites
+  - **Add new sites** - Plus button to add custom shortcuts
+  - **Auto-refresh favicons** - Dynamically fetches site icons
+  - **Persistent storage** - Favorites saved to local storage
+  - **Undo deletions** - Toast notification with undo option
 - **Interactive To-Do List** - Full CRUD operations with persistent storage
   - **Drag-and-drop reordering** - Click and drag to reorganize tasks
   - Click to mark complete/incomplete
@@ -47,15 +52,14 @@ Edit hex color values in [style.css](style.css):
 - **Background** (`#faf6f0`) - Light beige
 - **Todo Box** (`#fff8f2`) - Off-white background
 
-### Modify Favorites
+### Manage Favorites
 
-Edit the favorites links in [index.html](index.html#L37-L51):
-```html
-<a class="fav-item" href="https://example.com" target="_blank">
-  <img class="fav-icon" src="https://www.google.com/s2/favicons?sz=32&domain=example.com" alt="Example">
-  <span>Example</span>
-</a>
-```
+Favorites are managed through the UI with a right-click context menu:
+1. **Add sites** - Click the "+" button to add a new favorite
+2. **Edit sites** - Right-click any favorite and select "Edit site"
+3. **Delete sites** - Right-click and select "Delete site" (undo available)
+
+Default favorites are defined in [script.js](script.js#L219-L234). You can modify this array to change the default shortcuts.
 
 ### Personalize the Welcome Message
 

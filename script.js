@@ -25,55 +25,120 @@ const weatherInfo = {
   99: { label: "Thunder", icon: "⛈️" }
 };
 
-function fetchWeatherData(latitude, longitude) {
+// Configuration: how to resolve location for weather queries.
+// Options:
+// - 'precise' : use the exact browser geolocation coordinates (default high-accuracy)
+// - 'city'    : resolve to the city/town center (closer to what OS-level widgets show)
+// - 'ip'      : use IP-based coords (less accurate)
+const weatherLocationMode = "city";
+
+function fetchWeatherData(latitude, longitude, displayName) {
   console.log(`Fetching weather for coords: ${latitude}, ${longitude}`);
-  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`;
+  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&temperature_unit=fahrenheit&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
 
   // Fetch weather data
   fetch(weatherUrl)
     .then((res) => res.json())
     .then((weatherData) => {
-      const tempC = weatherData.current.temperature_2m;
-      const temp = Math.round((tempC * 9) / 5 + 32);
-      const weatherCode = weatherData.current.weather_code;
+      console.log("Weather API response:", weatherData);
+      
+      if (!weatherData.current_weather || !weatherData.daily) {
+        throw new Error("Incomplete weather data in response");
+      }
+      
+      const current = weatherData.current_weather;
+      const temp = Math.round(current.temperature);
+      const weatherCode = current.weathercode;
       const info = weatherInfo[weatherCode] || { label: "Unknown", icon: "❔" };
 
       document.getElementById("weather-icon").textContent = info.icon;
       document.getElementById("weather-temp").textContent = `${temp}°`;
       document.getElementById("weather-desc").textContent = info.label;
+
+      // If caller provided a display name (city-level), prefer that over reverse geocoding
+      if (displayName) {
+        document.getElementById("weather-location").textContent = displayName;
+      }
+      
+      console.log(`Weather updated: ${info.label} ${info.icon}`);
     })
     .catch((error) => {
       console.error("Weather fetch failed:", error);
       document.getElementById("weather-temp").textContent = "--°";
-      document.getElementById("weather-desc").textContent = "N/A";
+      document.getElementById("weather-desc").textContent = "Error";
+      document.getElementById("weather-icon").textContent = "❌";
     });
 
-  // Fetch location data using Nominatim reverse geocoding
-  const locationUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`;
-  console.log(`Fetching location from: ${locationUrl}`);
-  fetch(locationUrl, {
-    headers: {
-      'Accept': 'application/json'
-    }
-  })
-    .then((res) => res.json())
-    .then((locationData) => {
-      console.log("Location data received:", locationData);
-      const address = locationData.address;
-      if (address) {
-        // Try to get the most specific city-level location
-        const city = address.city || address.town || address.village || address.county || "Unknown";
-        const state = address.state || "";
-        const locationText = state ? `${city}, ${state}` : city;
-        document.getElementById("weather-location").textContent = locationText;
-      } else {
-        document.getElementById("weather-location").textContent = "Location unavailable";
+  // Only reverse-geocode if caller didn't provide a display name
+  if (!displayName) {
+    const locationUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`;
+    console.log(`Fetching location from: ${locationUrl}`);
+    fetch(locationUrl, {
+      headers: {
+        'Accept': 'application/json'
       }
     })
-    .catch((error) => {
-      console.error("Location fetch failed:", error);
-      document.getElementById("weather-location").textContent = "Location unavailable";
-    });
+      .then((res) => res.json())
+      .then((locationData) => {
+        console.log("Location data received:", locationData);
+        const address = locationData.address;
+        if (address) {
+          // Try to get the most specific city-level location
+          const city = address.city || address.town || address.village || address.county || "Unknown";
+          const state = address.state || "";
+          const locationText = state ? `${city}, ${state}` : city;
+          console.log(`Location set to: ${locationText}`);
+          document.getElementById("weather-location").textContent = locationText;
+        } else {
+          console.warn("No address data in location response");
+          document.getElementById("weather-location").textContent = "Location unavailable";
+        }
+      })
+      .catch((error) => {
+        console.error("Location fetch failed:", error);
+        document.getElementById("weather-location").textContent = "Location unavailable";
+      });
+  }
+}
+
+// Resolve coordinates according to `weatherLocationMode`.
+// Returns a promise that resolves to { latitude, longitude, displayName }
+function resolveLocationCoords(latitude, longitude) {
+  if (weatherLocationMode === "precise") {
+    return Promise.resolve({ latitude, longitude, displayName: null });
+  }
+
+  if (weatherLocationMode === "city") {
+    // Reverse first to get the city name, then search for the canonical city center
+    const reverseUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`;
+    return fetch(reverseUrl, { headers: { 'Accept': 'application/json' } })
+      .then((res) => res.json())
+      .then((locationData) => {
+        const address = locationData.address || {};
+        const city = address.city || address.town || address.village || address.county;
+        const state = address.state || "";
+        if (!city) return { latitude, longitude, displayName: null };
+        const query = state ? `${city}, ${state}` : city;
+        const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+        return fetch(searchUrl, { headers: { 'Accept': 'application/json' } })
+          .then((r) => r.json())
+          .then((results) => {
+            if (results && results[0]) {
+              return {
+                latitude: parseFloat(results[0].lat),
+                longitude: parseFloat(results[0].lon),
+                displayName: `${city}${state ? ', ' + state : ''}`
+              };
+            }
+            return { latitude, longitude, displayName: `${city}${state ? ', ' + state : ''}` };
+          })
+          .catch(() => ({ latitude, longitude, displayName: `${city}${state ? ', ' + state : ''}` }));
+      })
+      .catch(() => ({ latitude, longitude, displayName: null }));
+  }
+
+  // default: return input coords
+  return Promise.resolve({ latitude, longitude, displayName: null });
 }
 
 function getWeatherByIP() {
@@ -84,14 +149,19 @@ function getWeatherByIP() {
     .then((data) => {
       console.log("IP geolocation data:", data);
       if (data.latitude && data.longitude) {
-        fetchWeatherData(data.latitude, data.longitude);
+        console.log(`IP geolocation successful: ${data.latitude}, ${data.longitude}`);
+        resolveLocationCoords(data.latitude, data.longitude).then((resolved) => {
+          fetchWeatherData(resolved.latitude, resolved.longitude, resolved.displayName);
+        });
       } else {
+        console.warn("IP geolocation data missing coordinates");
         document.getElementById("weather-location").textContent = "Location unavailable";
       }
     })
     .catch((error) => {
       console.error("IP geolocation failed:", error);
       document.getElementById("weather-location").textContent = "Location unavailable";
+      document.getElementById("weather-desc").textContent = "Error";
     });
 }
 
@@ -103,7 +173,9 @@ function getWeather() {
       (position) => {
         console.log("Geolocation successful:", position.coords);
         const { latitude, longitude } = position.coords;
-        fetchWeatherData(latitude, longitude);
+        resolveLocationCoords(latitude, longitude).then((resolved) => {
+          fetchWeatherData(resolved.latitude, resolved.longitude, resolved.displayName);
+        });
       },
       (error) => {
         console.error("Geolocation error code:", error.code, "message:", error.message);
@@ -111,9 +183,9 @@ function getWeather() {
         getWeatherByIP();
       },
       {
-        timeout: 5000,
-        enableHighAccuracy: false,
-        maximumAge: 3600000 // Cache location for 1 hour
+        timeout: 10000,
+        enableHighAccuracy: true,  // FORCE HIGH ACCURACY - ignores cached data
+        maximumAge: 0  // NO CACHE - always fetch fresh location
       }
     );
   } else {
@@ -122,6 +194,8 @@ function getWeather() {
   }
 }
 getWeather();
+// Refresh weather every 30 minutes
+setInterval(getWeather, 30 * 60 * 1000);
 
 // -------------------------
 // DATE & TIME
@@ -170,7 +244,7 @@ document.getElementById("search-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     const query = e.target.value.trim();
     if (query) {
-      window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank");
+      window.open(`https://duckduckgo.com/?q=${encodeURIComponent(query)}`, "_blank");
       e.target.value = "";
     }
   }
@@ -199,25 +273,15 @@ const toastClose = document.getElementById("toast-close");
 
 function loadFavorites() {
   const stored = localStorage.getItem(favoritesKey);
-  const defaults = getDefaultFavorites();
 
-  if (!stored) return defaults;
+  if (!stored) return getDefaultFavorites();
 
   try {
     const parsed = JSON.parse(stored);
-    if (!Array.isArray(parsed)) return defaults;
-
-    const merged = [...parsed];
-    defaults.forEach((defaultSite) => {
-      const exists = merged.some(
-        (site) => site.url === defaultSite.url || site.name === defaultSite.name
-      );
-      if (!exists) merged.push(defaultSite);
-    });
-
-    return merged;
+    if (!Array.isArray(parsed)) return getDefaultFavorites();
+    return parsed;
   } catch {
-    return defaults;
+    return getDefaultFavorites();
   }
 }
 
@@ -257,6 +321,59 @@ function getFavicon(url) {
   return `https://www.google.com/s2/favicons?sz=32&domain=${encodeURIComponent(domain)}`;
 }
 
+function populateFavicon(img, siteUrl) {
+  const domain = domainFromUrl(siteUrl);
+  const sources = [];
+  try {
+    const origin = new URL(siteUrl).origin;
+    const pathname = new URL(siteUrl).pathname;
+    // Try page-path specific favicon first (e.g., /Git_Cheat_Sheet/favicon.ico)
+    const pageFavicon = `${origin}${pathname.replace(/\/$/, '')}/favicon.ico`;
+    sources.push(pageFavicon);
+    // Then try the site's root favicon
+    sources.push(`${origin}/favicon.ico`);
+    // Then try common third-party providers
+    sources.push(`https://www.google.com/s2/favicons?sz=64&domain=${domain}`);
+    sources.push(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
+    sources.push(`https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(siteUrl)}`);
+  } catch {
+    sources.push(`https://www.google.com/s2/favicons?sz=64&domain=${domain}`);
+  }
+
+  // Small inline SVG fallback (simple globe) as data URL
+  const svgFallback = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">' +
+    '<circle cx="12" cy="12" r="10" fill="%23fff8f2" stroke="%23b30000" stroke-width="1"/>' +
+    '</svg>'
+  );
+
+  let i = 0;
+  function trySrc() {
+    if (i >= sources.length) {
+      img.src = svgFallback;
+      return;
+    }
+    const src = sources[i++];
+    console.debug(`Favicon: trying ${src} for ${domain}`);
+    // set a temporary handler to try next on error
+    img.onerror = function () {
+      // prevent infinite loop
+      console.warn(`Favicon load failed for ${src} (domain: ${domain})`);
+      img.onerror = null;
+      trySrc();
+    };
+    img.onload = function () {
+      // loaded successfully, clear error handler
+      img.onerror = null;
+      console.debug(`Favicon loaded: ${src} for ${domain}`);
+      try { img.title = `favicon:${src}` } catch(e){}
+    };
+    img.src = src;
+  }
+
+  trySrc();
+}
+
 function renderFavorites() {
   favoritesContainer.innerHTML = "";
 
@@ -265,11 +382,24 @@ function renderFavorites() {
     link.className = "fav-item";
     link.href = site.url;
     link.dataset.index = index;
-    link.innerHTML = `<img class="fav-icon" src="${getFavicon(site.url)}" alt="${site.name}"><span>${site.name}</span>`;
+
+    const img = document.createElement("img");
+    img.className = "fav-icon";
+    img.alt = site.name;
+    // populate favicon with robust fallbacks
+    populateFavicon(img, site.url);
+
+    const span = document.createElement("span");
+    span.textContent = site.name;
+
+    link.appendChild(img);
+    link.appendChild(span);
+
     link.addEventListener("contextmenu", (event) => {
       event.preventDefault();
       showContextMenu(event.pageX, event.pageY, index);
     });
+
     favoritesContainer.appendChild(link);
   });
 
@@ -430,6 +560,7 @@ const addBtn = document.getElementById("add-btn");
 const todoList = document.getElementById("todo-list");
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let editingTodoIndex = null;
 renderTasks();
 
 addBtn.addEventListener("click", () => {
@@ -447,12 +578,16 @@ todoInput.addEventListener("keydown", (e) => {
 });
 
 todoList.addEventListener("click", (e) => {
-  const index = e.target.dataset.index;
+  const index = parseInt(e.target.dataset.index, 10);
 
   if (e.target.classList.contains("todo-text")) {
     tasks[index].completed = !tasks[index].completed;
     saveTasks();
     renderTasks();
+  }
+
+  if (e.target.classList.contains("edit-btn")) {
+    startEditingTask(index);
   }
 
   if (e.target.classList.contains("delete-btn")) {
@@ -461,6 +596,36 @@ todoList.addEventListener("click", (e) => {
     renderTasks();
   }
 });
+
+function startEditingTask(index) {
+  editingTodoIndex = index;
+  renderTasks();
+  setTimeout(() => {
+    const input = document.querySelector(".todo-edit-input");
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  });
+}
+
+function finishEditingTask(index, newText) {
+  if (index < 0 || index >= tasks.length) return;
+
+  const updatedText = newText.trim();
+  if (updatedText) {
+    tasks[index].text = updatedText;
+    saveTasks();
+  }
+
+  editingTodoIndex = null;
+  renderTasks();
+}
+
+function cancelEditingTask() {
+  editingTodoIndex = null;
+  renderTasks();
+}
 
 function renderTasks() {
   todoList.innerHTML = "";
@@ -471,10 +636,58 @@ function renderTasks() {
     li.draggable = true;
     li.dataset.index = i;
 
-    li.innerHTML = `
-      <span class="todo-text" data-index="${i}">${task.text}</span>
-      <button class="delete-btn" data-index="${i}">✖</button>
-    `;
+    if (editingTodoIndex === i) {
+      const input = document.createElement("input");
+      input.className = "todo-edit-input";
+      input.dataset.index = i;
+      input.value = task.text;
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          finishEditingTask(i, input.value);
+        }
+        if (e.key === "Escape") {
+          cancelEditingTask();
+        }
+      });
+      input.addEventListener("blur", () => {
+        finishEditingTask(i, input.value);
+      });
+
+      const actions = document.createElement("div");
+      actions.className = "todo-actions";
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
+      deleteBtn.dataset.index = i;
+      deleteBtn.textContent = "✖";
+      actions.appendChild(deleteBtn);
+
+      li.appendChild(input);
+      li.appendChild(actions);
+    } else {
+      const textSpan = document.createElement("span");
+      textSpan.className = "todo-text";
+      textSpan.dataset.index = i;
+      textSpan.textContent = task.text;
+
+      const actions = document.createElement("div");
+      actions.className = "todo-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "edit-btn";
+      editBtn.dataset.index = i;
+      editBtn.textContent = "✎";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
+      deleteBtn.dataset.index = i;
+      deleteBtn.textContent = "✖";
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      li.appendChild(textSpan);
+      li.appendChild(actions);
+    }
 
     // Drag event listeners
     li.addEventListener("dragstart", handleDragStart);
@@ -549,9 +762,15 @@ function saveTasks() {
 function refreshFavicons() {
   const favIcons = document.querySelectorAll(".fav-icon");
   favIcons.forEach((img) => {
-    const originalSrc = img.src.split("?")[0];
-    const timestamp = Date.now();
-    img.src = `${originalSrc}?t=${timestamp}`;
+    try {
+      const url = new URL(img.src);
+      url.searchParams.delete("t");
+      url.searchParams.set("t", Date.now().toString());
+      img.src = url.toString();
+    } catch {
+      const originalSrc = img.src.split("?")[0];
+      img.src = `${originalSrc}?t=${Date.now()}`;
+    }
   });
 }
 

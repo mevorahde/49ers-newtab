@@ -12,7 +12,7 @@ A beautiful, fully-featured Chrome/Brave extension that replaces your new tab pa
   - Falls back to IP-based location detection
   - Real-time weather from Open-Meteo API
   - Location reverse-geocoding via Nominatim
-- **Quick Search** - Google search directly from the new tab
+- **Quick Search** - DuckDuckGo search directly from the new tab
 - **Favorites Grid** - One-click access to your most-visited sites
   - **Right-click to edit or delete** - Context menu for managing favorites
   - **Add new sites** - Plus button to add custom shortcuts
@@ -23,6 +23,7 @@ A beautiful, fully-featured Chrome/Brave extension that replaces your new tab pa
   - **Drag-and-drop reordering** - Click and drag to reorganize tasks
   - Click to mark complete/incomplete
   - Local storage persistence across sessions
+  - **Inline editing** - Click a task to edit it in place; a small hint appears when editing is available
 
 ## Installation
 
@@ -59,7 +60,12 @@ Favorites are managed through the UI with a right-click context menu:
 2. **Edit sites** - Right-click any favorite and select "Edit site"
 3. **Delete sites** - Right-click and select "Delete site" (undo available)
 
-Default favorites are defined in [script.js](script.js#L219-L234). You can modify this array to change the default shortcuts.
+Default favorites are defined in [script.js](script.js). You can modify this array to change the default shortcuts.
+
+Recent behavior and fixes:
+- **Favorites persistence fix**: favorites are now authoritative from the user's saved localStorage value. The code no longer re-merges the saved list with the built-in defaults on every load, so deletions now persist.
+- **Favicons**: favicon loading was made more robust to support sites (like some GitHub Pages) that host favicons at page-specific paths. The loader attempts several locations (page `/favicon.ico`, origin `/favicon.ico`, then provider services) and falls back to an inline SVG when needed.
+- **Favicon refresh fix**: the favicon refresher now preserves existing query parameters and appends/updates a cache-busting `t=` timestamp parameter so icons refresh without breaking original URLs.
 
 ### Personalize the Welcome Message
 
@@ -81,6 +87,61 @@ Edit the welcome text in [index.html](index.html#L17):
 ├── icon.png               # Extension icon
 ├── AGENTS.md              # Development guidelines
 └── README.md              # This file
+
+## Recent Changes (summary)
+
+- Switched quick search from Google to DuckDuckGo for privacy-focused searches. See `index.html` and `script.js`.
+- Fixed favorites deletion persistence so user deletions are retained across reloads.
+- Improved favicon loading logic to try multiple sources (page path, origin root, Google s2/DuckDuckGo providers) and added console diagnostics for debugging favicon loading.
+- Fixed favicon refresh logic to preserve existing URL params and append a cache-busting timestamp parameter.
+- Added inline editing to the todo list with a small UI hint when editing is available.
+- Weather provider/location behavior: implemented a "city-center" resolution option that resolves to a canonical city center (when enabled) and requests temperatures in Fahrenheit directly from Open-Meteo to reduce discrepancies with OS widgets.
+- Test scaffolding: added unit tests (Jest) and an example Playwright smoke test with deterministic network mocks so e2e tests don't rely on external services.
+
+## Testing & Development
+
+This project now includes a small test scaffold for deterministic unit and e2e tests.
+
+Install dependencies and Playwright browsers:
+
+```bash
+npm install
+npx playwright install
+```
+
+Run unit tests (Jest):
+
+```bash
+npm test
+# or
+npm run test:unit
+```
+
+Run Playwright e2e smoke tests:
+
+```bash
+npm run test:e2e
+```
+
+Run all tests:
+
+```bash
+npm run test:all
+```
+
+Notes about the tests:
+- Unit tests live under `tests/unit/` and include helpers and small pure-function checks (see `helpers.js`).
+- The Playwright smoke test (`tests/e2e/`) runs `index.html` and intercepts network requests (Open-Meteo and favicon endpoints) to return canned responses. This makes e2e runs deterministic and suitable for CI.
+- If you prefer to run the extension in a browser for manual testing, load the folder from `chrome://extensions` as described in the Installation section.
+
+Files of interest for developers:
+- `script.js` — core logic and recent fixes
+- `helpers.js` — small exported helpers used by unit tests
+- `tests/unit/` — Jest unit tests
+- `tests/e2e/` — Playwright smoke test with network mocks
+- `package.json` — test scripts: `test`, `test:unit`, `test:e2e`, `test:all`
+
+If you want me to add CI config (GitHub Actions) to run these tests automatically, I can scaffold that for you.
 ```
 
 ## Technical Details

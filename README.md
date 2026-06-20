@@ -7,6 +7,10 @@ A beautiful, fully-featured Chrome/Brave extension that replaces your new tab pa
 - **Personalized Welcome Header** - "WELCOME BACK, DAVID" in custom 49ers font
 - **Real-Time Date & Time** - Auto-updating with large, easy-to-read display (28px)
 - **49ers Game Countdown** - Displays days until the next 49ers game
+  - Includes **preseason + regular season** next-game logic
+  - Shows detailed game card when kickoff is within 7 days
+  - Shows a week badge (`PRESEASON WEEK X` / `WEEK X`) on the game card
+  - Shows `YYYY Season` in offseason/unknown-next-game periods
 - **Dynamic Weather Widget** - Current temperature, conditions, and your location
   - Uses geolocation when available
   - Falls back to IP-based location detection
@@ -37,13 +41,19 @@ A beautiful, fully-featured Chrome/Brave extension that replaces your new tab pa
 
 ## Customization
 
-### Update the Game Date
+### Update Schedule Data
 
-Edit the game date in [script.js](script.js#L128):
-```javascript
-const gameDate = new Date("2026-09-10T13:00:00");
-```
-Change the date string to your desired game date (format: `YYYY-MM-DDTHH:mm:ss`).
+Primary baseline schedule data lives in [game-schedule.json](game-schedule.json):
+- Supports `seasonType` (`PRE`/`REG`)
+- Includes opponent, kickoff date/time, location, channel, and logo
+
+At runtime, schedule data flows as:
+1. Load versioned cache from localStorage (if valid)
+2. Fetch baseline JSON from GitHub (`game-schedule.json`)
+3. Weekly (or when gaps/issues are detected), merge from official NFL team schedule HTML
+
+Source + health diagnostics are logged in console as:
+- `[schedule] source=... games=... issues=... updated=...`
 
 ### Change Theme Colors
 
@@ -66,6 +76,9 @@ Recent behavior and fixes:
 - **Favorites persistence fix**: favorites are now authoritative from the user's saved localStorage value. The code no longer re-merges the saved list with the built-in defaults on every load, so deletions now persist.
 - **Favicons**: favicon loading was made more robust to support sites (like some GitHub Pages) that host favicons at page-specific paths. The loader attempts several locations (page `/favicon.ico`, origin `/favicon.ico`, then provider services) and falls back to an inline SVG when needed.
 - **Favicon refresh fix**: the favicon refresher now preserves existing query parameters and appends/updates a cache-busting `t=` timestamp parameter so icons refresh without breaking original URLs.
+- **Schedule resilience**: countdown now supports preseason + regular season, merges official NFL schedule updates, and validates schedule integrity (duplicate keys, invalid dates/logos, missing fields).
+- **Cache invalidation**: schedule cache is now versioned so incompatible/stale cache payloads are automatically discarded.
+- **Optional debug logs**: set `localStorage.debugMode = "true"` in DevTools to enable verbose weather/favicon logs.
 
 ### Personalize the Welcome Message
 
@@ -96,7 +109,7 @@ Edit the welcome text in [index.html](index.html#L17):
 - Fixed favicon refresh logic to preserve existing URL params and append a cache-busting timestamp parameter.
 - Added inline editing to the todo list with a small UI hint when editing is available.
 - Weather provider/location behavior: implemented a "city-center" resolution option that resolves to a canonical city center (when enabled) and requests temperatures in Fahrenheit directly from Open-Meteo to reduce discrepancies with OS widgets.
-- Test scaffolding: added unit tests (Jest) and an example Playwright smoke test with deterministic network mocks so e2e tests don't rely on external services.
+- Test scaffolding: added unit tests (Jest) and Playwright e2e tests with deterministic network mocks so schedule/weather tests do not rely on external services.
 
 ## Testing & Development
 
@@ -130,13 +143,20 @@ npm run test:all
 ```
 
 Notes about the tests:
-- Unit tests live under `tests/unit/` and include helpers and small pure-function checks (see `helpers.js`).
-- The Playwright smoke test (`tests/e2e/`) runs `index.html` and intercepts network requests (Open-Meteo and favicon endpoints) to return canned responses. This makes e2e runs deterministic and suitable for CI.
+- Unit tests live under `tests/unit/`:
+  - `helpers.test.js` for generic helpers
+  - `schedule.test.js` for parser/key/sort/validation/offseason behavior
+  - `schedule-data.test.js` for `game-schedule.json` quality checks (unique keys, NFL logo URLs, PRE/REG presence)
+- Playwright e2e tests live under `tests/e2e/`:
+  - `smoke.spec.js` basic page boot + weather/favorites rendering
+  - `schedule-states.spec.js` preseason/regular week badge text, offseason `YYYY Season`, and above-the-fold layout checks for laptop/monitor viewports
+- E2E tests intercept weather/schedule requests and return canned responses for deterministic runs.
 - If you prefer to run the extension in a browser for manual testing, load the folder from `chrome://extensions` as described in the Installation section.
 
 Files of interest for developers:
 - `script.js` — core logic and recent fixes
 - `helpers.js` — small exported helpers used by unit tests
+- `game-schedule.json` — baseline schedule data (`PRE`/`REG` entries)
 - `tests/unit/` — Jest unit tests
 - `tests/e2e/` — Playwright smoke test with network mocks
 - `package.json` — test scripts: `test`, `test:unit`, `test:e2e`, `test:all`
@@ -162,7 +182,10 @@ If you want me to add CI config (GitHub Actions) to run these tests automaticall
 |----------|---------|
 | `getWeather()` | Fetches geolocation and weather data |
 | `updateDateTime()` | Updates date/time display every second |
-| `updateCountdown()` | Calculates days to next 49ers game |
+| `updateCountdown()` | Calculates and renders next-game countdown/card |
+| `parseNflSchedulePage()` | Parses official NFL by-team schedule HTML |
+| `checkScheduleUpdates()` | Handles weekly refresh/merge and cache updates |
+| `validateScheduleData()` | Detects duplicate/invalid schedule entries |
 | `renderTasks()` | Displays todo list with drag-and-drop support |
 | `saveTasks()` | Persists todo list to localStorage |
 
@@ -180,6 +203,14 @@ Todo items are stored in browser's `localStorage` under the key `"tasks"`:
   { text: "Another task", completed: true }
 ]
 ```
+
+Schedule cache is stored in localStorage under `scheduleCache` with:
+- `version`
+- `season`
+- `source`
+- `issues`
+- `updatedAt`
+- `games`
 
 ## Drag-and-Drop Todo Reordering
 
@@ -217,6 +248,17 @@ Fully implemented with visual feedback:
 
 - Ensure `fonts/sf-sports-night.ttf` exists in the project folder
 - Reload the extension from `chrome://extensions/`
+
+### Schedule Looks Stale or Wrong
+
+1. Open DevTools Console on the new tab page
+2. Check `[schedule] source=... issues=...` log line
+3. Clear schedule cache and reload:
+
+```js
+localStorage.removeItem("scheduleCache");
+location.reload();
+```
 
 ## Development
 

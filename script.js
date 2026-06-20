@@ -32,15 +32,35 @@ const weatherInfo = {
 // - 'ip'      : use IP-based coords (less accurate)
 const weatherLocationMode = "city";
 
+const debugMode = (() => {
+  try {
+    return localStorage.getItem("debugMode") === "true";
+  } catch {
+    return false;
+  }
+})();
+
+function debugLog(...args) {
+  if (debugMode) {
+    console.log(...args);
+  }
+}
+
+function debugTrace(...args) {
+  if (debugMode) {
+    console.debug(...args);
+  }
+}
+
 function fetchWeatherData(latitude, longitude, displayName) {
-  console.log(`Fetching weather for coords: ${latitude}, ${longitude}`);
+  debugLog(`Fetching weather for coords: ${latitude}, ${longitude}`);
   const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&temperature_unit=fahrenheit&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
 
   // Fetch weather data
   fetch(weatherUrl)
     .then((res) => res.json())
     .then((weatherData) => {
-      console.log("Weather API response:", weatherData);
+      debugLog("Weather API response:", weatherData);
       
       if (!weatherData.current_weather || !weatherData.daily) {
         throw new Error("Incomplete weather data in response");
@@ -60,7 +80,7 @@ function fetchWeatherData(latitude, longitude, displayName) {
         document.getElementById("weather-location").textContent = displayName;
       }
       
-      console.log(`Weather updated: ${info.label} ${info.icon}`);
+      debugLog(`Weather updated: ${info.label} ${info.icon}`);
     })
     .catch((error) => {
       console.error("Weather fetch failed:", error);
@@ -72,7 +92,7 @@ function fetchWeatherData(latitude, longitude, displayName) {
   // Only reverse-geocode if caller didn't provide a display name
   if (!displayName) {
     const locationUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`;
-    console.log(`Fetching location from: ${locationUrl}`);
+    debugLog(`Fetching location from: ${locationUrl}`);
     fetch(locationUrl, {
       headers: {
         'Accept': 'application/json'
@@ -80,14 +100,14 @@ function fetchWeatherData(latitude, longitude, displayName) {
     })
       .then((res) => res.json())
       .then((locationData) => {
-        console.log("Location data received:", locationData);
+        debugLog("Location data received:", locationData);
         const address = locationData.address;
         if (address) {
           // Try to get the most specific city-level location
           const city = address.city || address.town || address.village || address.county || "Unknown";
           const state = address.state || "";
           const locationText = state ? `${city}, ${state}` : city;
-          console.log(`Location set to: ${locationText}`);
+          debugLog(`Location set to: ${locationText}`);
           document.getElementById("weather-location").textContent = locationText;
         } else {
           console.warn("No address data in location response");
@@ -143,13 +163,13 @@ function resolveLocationCoords(latitude, longitude) {
 
 function getWeatherByIP() {
   // Use IP-based geolocation via ipapi.co
-  console.log("Using IP-based geolocation");
+  debugLog("Using IP-based geolocation");
   fetch("https://ipapi.co/json/")
     .then((res) => res.json())
     .then((data) => {
-      console.log("IP geolocation data:", data);
+      debugLog("IP geolocation data:", data);
       if (data.latitude && data.longitude) {
-        console.log(`IP geolocation successful: ${data.latitude}, ${data.longitude}`);
+        debugLog(`IP geolocation successful: ${data.latitude}, ${data.longitude}`);
         resolveLocationCoords(data.latitude, data.longitude).then((resolved) => {
           fetchWeatherData(resolved.latitude, resolved.longitude, resolved.displayName);
         });
@@ -166,12 +186,12 @@ function getWeatherByIP() {
 }
 
 function getWeather() {
-  console.log("Starting weather fetch");
+  debugLog("Starting weather fetch");
   // Try geolocation first, but fall back to IP immediately if unavailable
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        console.log("Geolocation successful:", position.coords);
+        debugLog("Geolocation successful:", position.coords);
         const { latitude, longitude } = position.coords;
         resolveLocationCoords(latitude, longitude).then((resolved) => {
           fetchWeatherData(resolved.latitude, resolved.longitude, resolved.displayName);
@@ -179,7 +199,7 @@ function getWeather() {
       },
       (error) => {
         console.error("Geolocation error code:", error.code, "message:", error.message);
-        console.log("Falling back to IP-based geolocation");
+        debugLog("Falling back to IP-based geolocation");
         getWeatherByIP();
       },
       {
@@ -189,7 +209,7 @@ function getWeather() {
       }
     );
   } else {
-    console.log("Geolocation API not available, using IP fallback");
+    debugLog("Geolocation API not available, using IP fallback");
     getWeatherByIP();
   }
 }
@@ -225,17 +245,679 @@ setInterval(updateDateTime, 1000);
 // -------------------------
 // COUNTDOWN TO NEXT GAME
 // -------------------------
-function updateCountdown() {
-  const gameDate = new Date("2026-09-10T13:00:00");
-  const now = new Date();
-  const diff = gameDate - now;
+const scheduleSource = {
+  season: 2026,
+  jsonUrl: "https://raw.githubusercontent.com/mevorahde/49ers-newtab/main/game-schedule.json",
+  officialNflTeamScheduleUrl: "https://www.nfl.com/schedules/2026/by-team/san-francisco-49ers",
+  cacheKey: "scheduleCache",
+  cacheVersion: 2,
+  lastCheckedKey: "scheduleLastChecked",
+  weeklyCheckMs: 7 * 24 * 60 * 60 * 1000,
+  expectedRegularGameCount: 17,
+  expectedPreseasonGameCount: 3
+};
 
-  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-  document.getElementById("countdown").textContent = `${days} DAYS`;
+function nflClubLogo(code) {
+  return `https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/${code}`;
 }
 
-updateCountdown();
+const teamLogoMap = {
+  "Los Angeles Rams": nflClubLogo("LA"),
+  "Miami Dolphins": nflClubLogo("MIA"),
+  "Arizona Cardinals": nflClubLogo("AZ"),
+  "Denver Broncos": nflClubLogo("DEN"),
+  "Seattle Seahawks": nflClubLogo("SEA"),
+  "Washington Commanders": nflClubLogo("WAS"),
+  "Atlanta Falcons": nflClubLogo("ATL"),
+  "Las Vegas Raiders": nflClubLogo("LV"),
+  "Dallas Cowboys": nflClubLogo("DAL"),
+  "Minnesota Vikings": nflClubLogo("MIN"),
+  "New York Giants": nflClubLogo("NYG"),
+  "Philadelphia Eagles": nflClubLogo("PHI"),
+  "Los Angeles Chargers": nflClubLogo("LAC"),
+  "Kansas City Chiefs": nflClubLogo("KC"),
+  "Tennessee Titans": nflClubLogo("TEN")
+};
+
+const defaultSchedule = [
+  {
+    week: 1,
+    opponent: "Los Angeles Rams",
+    date: "2026-09-10T17:35:00-07:00",
+    location: "at",
+    channel: "Netflix",
+    logo: teamLogoMap["Los Angeles Rams"]
+  },
+  {
+    week: 2,
+    opponent: "Miami Dolphins",
+    date: "2026-09-20T13:25:00-07:00",
+    location: "vs",
+    channel: "Fox",
+    logo: teamLogoMap["Miami Dolphins"]
+  },
+  {
+    week: 3,
+    opponent: "Arizona Cardinals",
+    date: "2026-09-27T13:05:00-07:00",
+    location: "vs",
+    channel: "TBD",
+    logo: teamLogoMap["Arizona Cardinals"]
+  },
+  {
+    week: 4,
+    opponent: "Denver Broncos",
+    date: "2026-10-04T13:25:00-07:00",
+    location: "vs",
+    channel: "CBS",
+    logo: teamLogoMap["Denver Broncos"]
+  },
+  {
+    week: 5,
+    opponent: "Seattle Seahawks",
+    date: "2026-10-11T13:25:00-07:00",
+    location: "at",
+    channel: "Fox",
+    logo: teamLogoMap["Seattle Seahawks"]
+  },
+  {
+    week: 6,
+    opponent: "Washington Commanders",
+    date: "2026-10-19T17:15:00-07:00",
+    location: "vs",
+    channel: "ESPN/ABC",
+    logo: teamLogoMap["Washington Commanders"]
+  },
+  {
+    week: 7,
+    opponent: "Atlanta Falcons",
+    date: "2026-10-25T10:00:00-07:00",
+    location: "at",
+    channel: "Fox",
+    logo: teamLogoMap["Atlanta Falcons"]
+  },
+  {
+    week: 9,
+    opponent: "Las Vegas Raiders",
+    date: "2026-11-08T13:05:00-08:00",
+    location: "vs",
+    channel: "CBS",
+    logo: teamLogoMap["Las Vegas Raiders"]
+  },
+  {
+    week: 10,
+    opponent: "Dallas Cowboys",
+    date: "2026-11-15T13:25:00-08:00",
+    location: "at",
+    channel: "Fox",
+    logo: teamLogoMap["Dallas Cowboys"]
+  },
+  {
+    week: 11,
+    opponent: "Minnesota Vikings",
+    date: "2026-11-22T17:20:00-08:00",
+    location: "vs",
+    channel: "NBC",
+    logo: teamLogoMap["Minnesota Vikings"]
+  },
+  {
+    week: 12,
+    opponent: "Seattle Seahawks",
+    date: "2026-11-29T13:25:00-08:00",
+    location: "vs",
+    channel: "Fox",
+    logo: teamLogoMap["Seattle Seahawks"]
+  },
+  {
+    week: 13,
+    opponent: "New York Giants",
+    date: "2026-12-06T10:00:00-08:00",
+    location: "at",
+    channel: "Fox",
+    logo: teamLogoMap["New York Giants"]
+  },
+  {
+    week: 14,
+    opponent: "Los Angeles Rams",
+    date: "2026-12-13T13:25:00-08:00",
+    location: "vs",
+    channel: "Fox",
+    logo: teamLogoMap["Los Angeles Rams"]
+  },
+  {
+    week: 15,
+    opponent: "Los Angeles Chargers",
+    date: "2026-12-17T17:15:00-08:00",
+    location: "at",
+    channel: "Prime Video",
+    logo: teamLogoMap["Los Angeles Chargers"]
+  },
+  {
+    week: 16,
+    opponent: "Kansas City Chiefs",
+    date: "2026-12-27T13:25:00-08:00",
+    location: "at",
+    channel: "CBS",
+    logo: teamLogoMap["Kansas City Chiefs"]
+  },
+  {
+    week: 17,
+    opponent: "Philadelphia Eagles",
+    date: "2027-01-03T17:20:00-08:00",
+    location: "vs",
+    channel: "NBC",
+    logo: teamLogoMap["Philadelphia Eagles"]
+  }
+];
+
+let schedule = [];
+let scheduleLoaded = false;
+let scheduleMeta = {
+  source: "unknown",
+  issues: [],
+  lastUpdated: null
+};
+
+function parsePST(dateString) {
+  const date = new Date(dateString);
+  const pstOptions = {
+    timeZone: "America/Los_Angeles",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  };
+  return date.toLocaleTimeString("en-US", pstOptions);
+}
+
+function formatGameDate(dateString) {
+  const date = new Date(dateString);
+  const options = {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  };
+  return date.toLocaleDateString("en-US", options);
+}
+
+function teamLogoUrl(opponent) {
+  return teamLogoMap[opponent] || "";
+}
+
+function normalizeLogoUrl(logo, opponent) {
+  const fallback = teamLogoUrl(opponent);
+  if (!logo) return fallback;
+  if (/^https:\/\/static\.www\.nfl\.com\//i.test(logo)) return logo;
+  if (/upload\.wikimedia\.org/i.test(logo)) return fallback || logo;
+  return logo;
+}
+
+function decodeHtmlEntities(value) {
+  return (value || "")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function teamSlugToName(teamSlug) {
+  const map = {
+    "cardinals": "Arizona Cardinals",
+    "falcons": "Atlanta Falcons",
+    "ravens": "Baltimore Ravens",
+    "bills": "Buffalo Bills",
+    "panthers": "Carolina Panthers",
+    "bears": "Chicago Bears",
+    "bengals": "Cincinnati Bengals",
+    "browns": "Cleveland Browns",
+    "cowboys": "Dallas Cowboys",
+    "broncos": "Denver Broncos",
+    "lions": "Detroit Lions",
+    "packers": "Green Bay Packers",
+    "texans": "Houston Texans",
+    "colts": "Indianapolis Colts",
+    "jaguars": "Jacksonville Jaguars",
+    "chiefs": "Kansas City Chiefs",
+    "raiders": "Las Vegas Raiders",
+    "chargers": "Los Angeles Chargers",
+    "rams": "Los Angeles Rams",
+    "dolphins": "Miami Dolphins",
+    "vikings": "Minnesota Vikings",
+    "patriots": "New England Patriots",
+    "saints": "New Orleans Saints",
+    "giants": "New York Giants",
+    "jets": "New York Jets",
+    "eagles": "Philadelphia Eagles",
+    "steelers": "Pittsburgh Steelers",
+    "seahawks": "Seattle Seahawks",
+    "buccaneers": "Tampa Bay Buccaneers",
+    "titans": "Tennessee Titans",
+    "commanders": "Washington Commanders",
+    "arizona-cardinals": "Arizona Cardinals",
+    "atlanta-falcons": "Atlanta Falcons",
+    "baltimore-ravens": "Baltimore Ravens",
+    "buffalo-bills": "Buffalo Bills",
+    "carolina-panthers": "Carolina Panthers",
+    "chicago-bears": "Chicago Bears",
+    "cincinnati-bengals": "Cincinnati Bengals",
+    "cleveland-browns": "Cleveland Browns",
+    "dallas-cowboys": "Dallas Cowboys",
+    "denver-broncos": "Denver Broncos",
+    "detroit-lions": "Detroit Lions",
+    "green-bay-packers": "Green Bay Packers",
+    "houston-texans": "Houston Texans",
+    "indianapolis-colts": "Indianapolis Colts",
+    "jacksonville-jaguars": "Jacksonville Jaguars",
+    "kansas-city-chiefs": "Kansas City Chiefs",
+    "las-vegas-raiders": "Las Vegas Raiders",
+    "los-angeles-chargers": "Los Angeles Chargers",
+    "los-angeles-rams": "Los Angeles Rams",
+    "miami-dolphins": "Miami Dolphins",
+    "minnesota-vikings": "Minnesota Vikings",
+    "new-england-patriots": "New England Patriots",
+    "new-orleans-saints": "New Orleans Saints",
+    "new-york-giants": "New York Giants",
+    "new-york-jets": "New York Jets",
+    "philadelphia-eagles": "Philadelphia Eagles",
+    "pittsburgh-steelers": "Pittsburgh Steelers",
+    "san-francisco-49ers": "San Francisco 49ers",
+    "seattle-seahawks": "Seattle Seahawks",
+    "tampa-bay-buccaneers": "Tampa Bay Buccaneers",
+    "tennessee-titans": "Tennessee Titans",
+    "washington-commanders": "Washington Commanders"
+  };
+  return map[teamSlug] || teamSlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function parseTeamsFromGameSlug(gameSlug) {
+  const gameTail = new RegExp(`-${scheduleSource.season}-(pre|reg)-(\\d+)$`);
+  const weekMatch = gameSlug.match(gameTail);
+  if (!weekMatch) return null;
+
+  const seasonType = weekMatch[1].toUpperCase();
+  const week = parseInt(weekMatch[2], 10);
+  const teamsPart = gameSlug.replace(gameTail, "");
+
+  if (teamsPart.startsWith("49ers-at-")) {
+    const opponentSlug = teamsPart.replace("49ers-at-", "");
+    return { seasonType, week, location: "at", opponent: teamSlugToName(opponentSlug) };
+  }
+
+  if (teamsPart.endsWith("-at-49ers")) {
+    const opponentSlug = teamsPart.replace(/-at-49ers$/, "");
+    return { seasonType, week, location: "vs", opponent: teamSlugToName(opponentSlug) };
+  }
+
+  return null;
+}
+
+function getGameKey(game) {
+  const seasonType = (game.seasonType || "REG").toUpperCase();
+  return `${seasonType}-${game.week}`;
+}
+
+function getGameSortValue(game) {
+  if (game.date) {
+    const parsed = new Date(game.date).getTime();
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+
+  const seasonRank = {
+    PRE: 1,
+    REG: 2,
+    POST: 3
+  };
+  const rank = seasonRank[(game.seasonType || "REG").toUpperCase()] || 9;
+  return scheduleSource.season * 1000000 + rank * 1000 + (game.week || 0);
+}
+
+function validateScheduleData(games) {
+  const issues = [];
+  const seen = new Set();
+
+  (games || []).forEach((game) => {
+    const seasonType = (game.seasonType || "REG").toUpperCase();
+    const key = `${seasonType}-${game.week}`;
+
+    if (seen.has(key)) {
+      issues.push(`Duplicate game key: ${key}`);
+    } else {
+      seen.add(key);
+    }
+
+    if (!game.week || !game.opponent || !game.location) {
+      issues.push(`Missing required fields for game key: ${key}`);
+    }
+
+    if (!game.date || Number.isNaN(new Date(game.date).getTime())) {
+      issues.push(`Invalid or missing date for game key: ${key}`);
+    }
+
+    if (!game.logo || !/^https:\/\/static\.www\.nfl\.com\//i.test(game.logo)) {
+      issues.push(`Non-official or missing logo for game key: ${key}`);
+    }
+  });
+
+  return issues;
+}
+
+function logScheduleMeta() {
+  const issueCount = scheduleMeta.issues.length;
+  console.info(
+    `[schedule] source=${scheduleMeta.source} games=${schedule.length} issues=${issueCount} updated=${scheduleMeta.lastUpdated || "n/a"}`
+  );
+  if (issueCount) {
+    console.warn("[schedule] validation issues:", scheduleMeta.issues);
+  }
+}
+
+function loadCachedSchedule() {
+  try {
+    const cachedText = localStorage.getItem(scheduleSource.cacheKey);
+    if (!cachedText) return null;
+    const cached = JSON.parse(cachedText);
+    if (
+      cached &&
+      cached.version === scheduleSource.cacheVersion &&
+      cached.season === scheduleSource.season &&
+      Array.isArray(cached.games)
+    ) {
+      scheduleMeta.source = cached.source || "cache";
+      scheduleMeta.issues = Array.isArray(cached.issues) ? cached.issues : [];
+      scheduleMeta.lastUpdated = cached.updatedAt || null;
+      return cached.games;
+    }
+
+    // stale cache shape/version, clear it so we rebuild from canonical sources
+    localStorage.removeItem(scheduleSource.cacheKey);
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function saveCachedSchedule() {
+  try {
+    localStorage.setItem(
+      scheduleSource.cacheKey,
+      JSON.stringify({
+        version: scheduleSource.cacheVersion,
+        season: scheduleSource.season,
+        source: scheduleMeta.source,
+        issues: scheduleMeta.issues,
+        updatedAt: new Date().toISOString(),
+        games: schedule
+      })
+    );
+  } catch {
+    console.warn("Unable to cache schedule locally.");
+  }
+}
+
+function applyScheduleData(games) {
+  if (Array.isArray(games) && games.length > 0) {
+    schedule = games
+      .map((game) => ({
+        ...game,
+        seasonType: (game.seasonType || "REG").toUpperCase(),
+        logo: normalizeLogoUrl(game.logo, game.opponent)
+      }))
+      .sort((a, b) => getGameSortValue(a) - getGameSortValue(b));
+
+    scheduleMeta.issues = validateScheduleData(schedule);
+    scheduleMeta.lastUpdated = new Date().toISOString();
+    scheduleLoaded = true;
+    logScheduleMeta();
+    return true;
+  }
+  return false;
+}
+
+function mergeScheduleData(newGames) {
+  const existingByWeek = Object.fromEntries(schedule.map((game) => [getGameKey(game), game]));
+  let changed = false;
+
+  newGames.forEach((incoming) => {
+    const normalizedIncoming = {
+      ...incoming,
+      seasonType: (incoming.seasonType || "REG").toUpperCase(),
+      logo: normalizeLogoUrl(incoming.logo, incoming.opponent)
+    };
+    const gameKey = getGameKey(normalizedIncoming);
+    const existing = existingByWeek[gameKey];
+    if (!existing) {
+      existingByWeek[gameKey] = normalizedIncoming;
+      changed = true;
+      return;
+    }
+
+    const merged = { ...existing };
+    ["opponent", "date", "location", "channel", "logo"].forEach((field) => {
+      if (normalizedIncoming[field] && normalizedIncoming[field] !== "TBD" && normalizedIncoming[field] !== merged[field]) {
+        merged[field] = normalizedIncoming[field];
+      }
+    });
+
+    if (JSON.stringify(merged) !== JSON.stringify(existing)) {
+      existingByWeek[gameKey] = merged;
+      changed = true;
+    }
+  });
+
+  schedule = Object.values(existingByWeek).sort((a, b) => getGameSortValue(a) - getGameSortValue(b));
+  return changed;
+}
+
+function loadSchedule() {
+  const cached = loadCachedSchedule();
+  if (cached) {
+    scheduleMeta.source = scheduleMeta.source || "cache";
+    applyScheduleData(cached);
+  }
+
+  return fetch(scheduleSource.jsonUrl)
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`Schedule JSON failed: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((data) => {
+      if (applyScheduleData(data)) {
+        scheduleMeta.source = "json";
+        saveCachedSchedule();
+      }
+    })
+    .catch((error) => {
+      console.warn("Failed to load schedule JSON, using fallback or cache.", error);
+      if (!schedule.length) {
+        scheduleMeta.source = "default";
+        applyScheduleData(defaultSchedule);
+        saveCachedSchedule();
+      }
+      scheduleLoaded = true;
+    });
+}
+
+function hasScheduleGaps() {
+  const contentMissing = schedule.some(
+    (game) => !game.week || !game.opponent || !game.date || !game.location || !game.channel || !game.logo
+  );
+  const regularCount = schedule.filter((game) => (game.seasonType || "REG").toUpperCase() === "REG").length;
+  const preseasonCount = schedule.filter((game) => (game.seasonType || "REG").toUpperCase() === "PRE").length;
+  const countMissing =
+    regularCount < scheduleSource.expectedRegularGameCount ||
+    preseasonCount < scheduleSource.expectedPreseasonGameCount;
+  const preseasonMissing = !schedule.some((game) => (game.seasonType || "REG").toUpperCase() === "PRE");
+  const hasValidationIssues = scheduleMeta.issues.length > 0;
+  return contentMissing || countMissing || preseasonMissing || hasValidationIssues;
+}
+
+function shouldRefreshSchedule() {
+  const lastChecked = parseInt(localStorage.getItem(scheduleSource.lastCheckedKey), 10) || 0;
+  const now = Date.now();
+  return hasScheduleGaps() || now - lastChecked >= scheduleSource.weeklyCheckMs;
+}
+
+function parseNflSchedulePage(htmlText) {
+  const html = decodeHtmlEntities(htmlText);
+  const gameHrefRegex = /href="\/games\/([a-z0-9-]+-(pre|reg)-\d+)"/gi;
+  const hits = [...html.matchAll(gameHrefRegex)];
+  const gamesByWeek = {};
+
+  hits.forEach((hit, index) => {
+    const gameSlug = hit[1];
+    const parsed = parseTeamsFromGameSlug(gameSlug);
+    if (!parsed) return;
+
+    const start = hit.index || 0;
+    const end = index + 1 < hits.length ? (hits[index + 1].index || html.length) : html.length;
+    const section = html.slice(start, Math.min(end, start + 14000));
+
+    const dateMatch = section.match(/dateTime="([^"]+)"/i);
+    const date = dateMatch ? new Date(dateMatch[1]).toISOString() : null;
+
+    const networkMatch = section.match(/alt="([^\"]+?) network logo"/i);
+    const hasLocalLabel = /\bLOCAL\b/i.test(section);
+    const channel = networkMatch ? networkMatch[1].trim() : hasLocalLabel ? "LOCAL" : "TBD";
+
+    const logo = teamLogoUrl(parsed.opponent);
+    const gameKey = `${parsed.seasonType}-${parsed.week}`;
+
+    gamesByWeek[gameKey] = {
+      seasonType: parsed.seasonType,
+      week: parsed.week,
+      opponent: parsed.opponent,
+      date,
+      location: parsed.location,
+      channel,
+      logo
+    };
+  });
+
+  return Object.values(gamesByWeek).sort((a, b) => getGameSortValue(a) - getGameSortValue(b));
+}
+
+function fetchOfficialSchedule() {
+  return fetch(scheduleSource.officialNflTeamScheduleUrl, { headers: { Accept: "text/html" } })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`Official schedule fetch failed: ${res.status}`);
+      }
+      return res.text();
+    })
+    .then(parseNflSchedulePage)
+    .then((officialGames) => {
+      if (officialGames.length && mergeScheduleData(officialGames)) {
+        scheduleMeta.source = "nfl-live";
+        scheduleMeta.issues = validateScheduleData(schedule);
+        scheduleMeta.lastUpdated = new Date().toISOString();
+        logScheduleMeta();
+        saveCachedSchedule();
+      }
+      return officialGames;
+    })
+    .catch((error) => {
+      console.warn("Official schedule fetch failed.", error);
+      return [];
+    });
+}
+
+function checkScheduleUpdates() {
+  if (!shouldRefreshSchedule()) {
+    return Promise.resolve();
+  }
+
+  return fetchOfficialSchedule().finally(() => {
+    localStorage.setItem(scheduleSource.lastCheckedKey, Date.now().toString());
+  });
+}
+
+function getNextGame() {
+  const now = new Date();
+  return (
+    schedule
+      .filter((game) => game.date)
+      .sort((a, b) => getGameSortValue(a) - getGameSortValue(b))
+      .find((game) => new Date(game.date) > now) || null
+  );
+}
+
+function getOffseasonSeasonLabel() {
+  return `${new Date().getFullYear()} Season`;
+}
+
+function getGameWeekLabel(game) {
+  const week = game.week || "?";
+  const seasonType = (game.seasonType || "REG").toUpperCase();
+  if (seasonType === "PRE") {
+    return `PRESEASON WEEK ${week}`;
+  }
+  if (seasonType === "POST") {
+    return `POSTSEASON WEEK ${week}`;
+  }
+  return `WEEK ${week}`;
+}
+
+function updateCountdown() {
+  const countdownElement = document.getElementById("countdown");
+  const gameCard = document.getElementById("game-card");
+
+  if (!scheduleLoaded) {
+    countdownElement.textContent = "LOADING...";
+    gameCard.classList.add("hidden");
+    return;
+  }
+
+  const nextGame = getNextGame();
+  if (!nextGame) {
+    countdownElement.textContent = getOffseasonSeasonLabel();
+    gameCard.classList.add("hidden");
+    return;
+  }
+
+  const now = new Date();
+  const gameDate = new Date(nextGame.date);
+  const diff = gameDate - now;
+  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+
+  countdownElement.textContent = `${days} DAYS`;
+
+  const showDetails = diff <= 7 * 24 * 60 * 60 * 1000 && diff >= 0;
+  if (showDetails) {
+    document.getElementById("game-logo").src = nextGame.logo;
+    document.getElementById("game-logo").alt = `${nextGame.opponent} logo`;
+    document.getElementById("game-week-badge").textContent = getGameWeekLabel(nextGame);
+    document.getElementById("game-opponent").textContent = nextGame.opponent;
+    document.getElementById("game-meta").textContent = `${nextGame.location.toUpperCase()} • ${parsePST(nextGame.date)} PST • ${nextGame.channel || "TBD"}`;
+    document.getElementById("game-date").textContent = formatGameDate(nextGame.date);
+    gameCard.classList.remove("hidden");
+  } else {
+    gameCard.classList.add("hidden");
+  }
+}
+
+loadSchedule()
+  .then(() => checkScheduleUpdates())
+  .finally(updateCountdown);
+
 setInterval(updateCountdown, 60 * 60 * 1000);
+setInterval(() => {
+  checkScheduleUpdates().then(updateCountdown);
+}, scheduleSource.weeklyCheckMs);
+
+if (typeof window !== "undefined") {
+  window.__scheduleInternals = {
+    decodeHtmlEntities,
+    teamSlugToName,
+    parseTeamsFromGameSlug,
+    getGameKey,
+    getGameSortValue,
+    parseNflSchedulePage,
+    validateScheduleData,
+    getOffseasonSeasonLabel
+  };
+}
 
 // -------------------------
 // SEARCH LOGIC
@@ -354,7 +1036,7 @@ function populateFavicon(img, siteUrl) {
       return;
     }
     const src = sources[i++];
-    console.debug(`Favicon: trying ${src} for ${domain}`);
+    debugTrace(`Favicon: trying ${src} for ${domain}`);
     // set a temporary handler to try next on error
     img.onerror = function () {
       // prevent infinite loop
@@ -365,7 +1047,7 @@ function populateFavicon(img, siteUrl) {
     img.onload = function () {
       // loaded successfully, clear error handler
       img.onerror = null;
-      console.debug(`Favicon loaded: ${src} for ${domain}`);
+      debugTrace(`Favicon loaded: ${src} for ${domain}`);
       try { img.title = `favicon:${src}` } catch(e){}
     };
     img.src = src;

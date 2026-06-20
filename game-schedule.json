@@ -1,0 +1,173 @@
+[
+  {
+    "seasonType": "PRE",
+    "week": 1,
+    "opponent": "Tennessee Titans",
+    "date": "2026-08-13T18:00:00-07:00",
+    "location": "vs",
+    "channel": "LOCAL",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/TEN"
+  },
+  {
+    "seasonType": "PRE",
+    "week": 2,
+    "opponent": "Los Angeles Chargers",
+    "date": "2026-08-20T19:00:00-07:00",
+    "location": "at",
+    "channel": "LOCAL",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/LAC"
+  },
+  {
+    "seasonType": "PRE",
+    "week": 3,
+    "opponent": "Las Vegas Raiders",
+    "date": "2026-08-27T17:00:00-07:00",
+    "location": "at",
+    "channel": "LOCAL",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/LV"
+  },
+  {
+    "seasonType": "REG",
+    "week": 1,
+    "opponent": "Los Angeles Rams",
+    "date": "2026-09-10T17:35:00-07:00",
+    "location": "at",
+    "channel": "Netflix",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/LA"
+  },
+  {
+    "seasonType": "REG",
+    "week": 2,
+    "opponent": "Miami Dolphins",
+    "date": "2026-09-20T13:25:00-07:00",
+    "location": "vs",
+    "channel": "Fox",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/MIA"
+  },
+  {
+    "seasonType": "REG",
+    "week": 3,
+    "opponent": "Arizona Cardinals",
+    "date": "2026-09-27T13:05:00-07:00",
+    "location": "vs",
+    "channel": "TBD",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/AZ"
+  },
+  {
+    "seasonType": "REG",
+    "week": 4,
+    "opponent": "Denver Broncos",
+    "date": "2026-10-04T13:25:00-07:00",
+    "location": "vs",
+    "channel": "CBS",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/DEN"
+  },
+  {
+    "seasonType": "REG",
+    "week": 5,
+    "opponent": "Seattle Seahawks",
+    "date": "2026-10-11T13:25:00-07:00",
+    "location": "at",
+    "channel": "Fox",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/SEA"
+  },
+  {
+    "seasonType": "REG",
+    "week": 6,
+    "opponent": "Washington Commanders",
+    "date": "2026-10-19T17:15:00-07:00",
+    "location": "vs",
+    "channel": "ESPN/ABC",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/WAS"
+  },
+  {
+    "seasonType": "REG",
+    "week": 7,
+    "opponent": "Atlanta Falcons",
+    "date": "2026-10-25T10:00:00-07:00",
+    "location": "at",
+    "channel": "Fox",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/ATL"
+  },
+  {
+    "seasonType": "REG",
+    "week": 9,
+    "opponent": "Las Vegas Raiders",
+    "date": "2026-11-08T13:05:00-08:00",
+    "location": "vs",
+    "channel": "CBS",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/LV"
+  },
+  {
+    "seasonType": "REG",
+    "week": 10,
+    "opponent": "Dallas Cowboys",
+    "date": "2026-11-15T13:25:00-08:00",
+    "location": "at",
+    "channel": "Fox",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/DAL"
+  },
+  {
+    "seasonType": "REG",
+    "week": 11,
+    "opponent": "Minnesota Vikings",
+    "date": "2026-11-22T17:20:00-08:00",
+    "location": "vs",
+    "channel": "NBC",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/MIN"
+  },
+  {
+    "seasonType": "REG",
+    "week": 12,
+    "opponent": "Seattle Seahawks",
+    "date": "2026-11-29T13:25:00-08:00",
+    "location": "vs",
+    "channel": "Fox",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/SEA"
+  },
+  {
+    "seasonType": "REG",
+    "week": 13,
+    "opponent": "New York Giants",
+    "date": "2026-12-06T10:00:00-08:00",
+    "location": "at",
+    "channel": "Fox",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/NYG"
+  },
+  {
+    "seasonType": "REG",
+    "week": 14,
+    "opponent": "Los Angeles Rams",
+    "date": "2026-12-13T13:25:00-08:00",
+    "location": "vs",
+    "channel": "Fox",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/LA"
+  },
+  {
+    "seasonType": "REG",
+    "week": 15,
+    "opponent": "Los Angeles Chargers",
+    "date": "2026-12-17T17:15:00-08:00",
+    "location": "at",
+    "channel": "Prime Video",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/LAC"
+  },
+  {
+    "seasonType": "REG",
+    "week": 16,
+    "opponent": "Kansas City Chiefs",
+    "date": "2026-12-27T13:25:00-08:00",
+    "location": "at",
+    "channel": "CBS",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/KC"
+  },
+  {
+    "seasonType": "REG",
+    "week": 17,
+    "opponent": "Philadelphia Eagles",
+    "date": "2027-01-03T17:20:00-08:00",
+    "location": "vs",
+    "channel": "NBC",
+    "logo": "https://static.www.nfl.com/f_auto,h_80,dpr_2.0,q_auto,w_80/league/api/clubs/logos/PHI"
+  }
+]

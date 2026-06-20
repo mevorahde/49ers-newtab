@@ -1260,23 +1260,30 @@ todoInput.addEventListener("keydown", (e) => {
 });
 
 todoList.addEventListener("click", (e) => {
-  const index = parseInt(e.target.dataset.index, 10);
+  const todoItem = e.target.closest(".todo-item");
+  if (!todoItem) return;
 
-  if (e.target.classList.contains("todo-text")) {
-    tasks[index].completed = !tasks[index].completed;
-    saveTasks();
-    renderTasks();
-  }
+  const index = parseInt(todoItem.dataset.index, 10);
 
-  if (e.target.classList.contains("edit-btn")) {
+  if (e.target.closest(".edit-btn")) {
     startEditingTask(index);
+    return;
   }
 
-  if (e.target.classList.contains("delete-btn")) {
+  if (e.target.closest(".delete-btn")) {
     tasks.splice(index, 1);
     saveTasks();
     renderTasks();
+    return;
   }
+
+  if (e.target.closest(".todo-edit-input")) {
+    return;
+  }
+
+  tasks[index].completed = !tasks[index].completed;
+  saveTasks();
+  renderTasks();
 });
 
 function startEditingTask(index) {

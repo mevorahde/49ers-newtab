@@ -147,4 +147,11 @@ describe('schedule internals', () => {
     const label = internals.getOffseasonSeasonLabel();
     expect(label).toMatch(/^\d{4} Season$/);
   });
+
+  test('counts a game tomorrow as one calendar day away', () => {
+    const now = new Date(2026, 7, 12, 20, 0);
+    const gameDate = new Date(2026, 7, 13, 18, 0);
+
+    expect(internals.getCalendarDayDifference(now, gameDate)).toBe(1);
+  });
 });

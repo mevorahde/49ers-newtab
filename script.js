@@ -859,6 +859,12 @@ function getGameWeekLabel(game) {
   return `WEEK ${week}`;
 }
 
+function getCalendarDayDifference(startDate, endDate) {
+  const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  return Math.round((end - start) / (1000 * 60 * 60 * 24));
+}
+
 function updateCountdown() {
   const countdownElement = document.getElementById("countdown");
   const gameCard = document.getElementById("game-card");
@@ -879,7 +885,7 @@ function updateCountdown() {
   const now = new Date();
   const gameDate = new Date(nextGame.date);
   const diff = gameDate - now;
-  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  const days = Math.max(0, getCalendarDayDifference(now, gameDate));
 
   countdownElement.textContent = `${days} DAYS`;
 
@@ -915,7 +921,8 @@ if (typeof window !== "undefined") {
     getGameSortValue,
     parseNflSchedulePage,
     validateScheduleData,
-    getOffseasonSeasonLabel
+    getOffseasonSeasonLabel,
+    getCalendarDayDifference
   };
 }
 

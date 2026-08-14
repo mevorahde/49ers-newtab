@@ -839,7 +839,7 @@ function getNextGame() {
     schedule
       .filter((game) => game.date)
       .sort((a, b) => getGameSortValue(a) - getGameSortValue(b))
-      .find((game) => new Date(game.date) > now) || null
+      .find((game) => getCalendarDayDifference(now, new Date(game.date)) >= 0) || null
   );
 }
 
@@ -865,6 +865,10 @@ function getCalendarDayDifference(startDate, endDate) {
   return Math.round((end - start) / (1000 * 60 * 60 * 24));
 }
 
+function getCountdownLabel(days) {
+  return days === 0 ? "Today is gameday!" : `${days} DAYS`;
+}
+
 function updateCountdown() {
   const countdownElement = document.getElementById("countdown");
   const gameCard = document.getElementById("game-card");
@@ -885,11 +889,12 @@ function updateCountdown() {
   const now = new Date();
   const gameDate = new Date(nextGame.date);
   const diff = gameDate - now;
-  const days = Math.max(0, getCalendarDayDifference(now, gameDate));
+  const calendarDays = getCalendarDayDifference(now, gameDate);
+  const days = Math.max(0, calendarDays);
 
-  countdownElement.textContent = `${days} DAYS`;
+  countdownElement.textContent = getCountdownLabel(days);
 
-  const showDetails = diff <= 7 * 24 * 60 * 60 * 1000 && diff >= 0;
+  const showDetails = calendarDays <= 7 && calendarDays >= 0;
   if (showDetails) {
     document.getElementById("game-logo").src = nextGame.logo;
     document.getElementById("game-logo").alt = `${nextGame.opponent} logo`;
@@ -922,7 +927,8 @@ if (typeof window !== "undefined") {
     parseNflSchedulePage,
     validateScheduleData,
     getOffseasonSeasonLabel,
-    getCalendarDayDifference
+    getCalendarDayDifference,
+    getCountdownLabel
   };
 }
 

@@ -154,4 +154,16 @@ describe('schedule internals', () => {
 
     expect(internals.getCalendarDayDifference(now, gameDate)).toBe(1);
   });
+
+  test('labels gameday instead of displaying zero days', () => {
+    expect(internals.getCountdownLabel(0)).toBe('Today is gameday!');
+    expect(internals.getCountdownLabel(1)).toBe('1 DAYS');
+  });
+
+  test('keeps a game selected after kickoff on gameday', () => {
+    const now = new Date(2026, 7, 13, 18, 1);
+    const gameDate = new Date(2026, 7, 13, 18, 0);
+
+    expect(internals.getCalendarDayDifference(now, gameDate)).toBe(0);
+  });
 });

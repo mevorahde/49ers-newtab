@@ -74,7 +74,8 @@ Default favorites are defined in [script.js](script.js). You can modify this arr
 
 Recent behavior and fixes:
 - **Favorites persistence fix**: favorites are now authoritative from the user's saved localStorage value. The code no longer re-merges the saved list with the built-in defaults on every load, so deletions now persist.
-- **Favicons**: favicon loading was made more robust to support sites (like some GitHub Pages) that host favicons at page-specific paths. The loader attempts several locations (page `/favicon.ico`, origin `/favicon.ico`, then provider services) and falls back to an inline SVG when needed.
+- **Favicons**: Family Recipes shortcuts first use the project's own `cookbook.svg`, rather than the personal-site logo on the shared GitHub Pages domain. Other shortcuts retain the existing lookup sequence (page `/favicon.ico`, origin `/favicon.ico`, then provider services), with an inline SVG fallback when needed.
+- **After changing extension files**: open `brave://extensions/` (or `chrome://extensions/`), reload **David's New Tab**, then open a new tab. Do not remove/reinstall the extension or clear its storage; reloading preserves your saved favorites and tasks.
 - **Favicon refresh fix**: the favicon refresher now preserves existing query parameters and appends/updates a cache-busting `t=` timestamp parameter so icons refresh without breaking original URLs.
 - **Schedule resilience**: countdown now supports preseason + regular season, merges official NFL schedule updates, and validates schedule integrity (duplicate keys, invalid dates/logos, missing fields).
 - **Cache invalidation**: schedule cache is now versioned so incompatible/stale cache payloads are automatically discarded.

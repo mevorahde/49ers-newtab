@@ -1020,8 +1020,15 @@ function populateFavicon(img, siteUrl) {
   const domain = domainFromUrl(siteUrl);
   const sources = [];
   try {
-    const origin = new URL(siteUrl).origin;
-    const pathname = new URL(siteUrl).pathname;
+    const parsedUrl = new URL(siteUrl);
+    const origin = parsedUrl.origin;
+    const pathname = parsedUrl.pathname;
+    // Project sites can use a named SVG instead of favicon.ico. Prefer the
+    // cookbook's own icon before the shared GitHub Pages domain's personal logo.
+    if (origin === 'https://mevorahde.github.io' &&
+        (pathname === '/family-recipes' || pathname.startsWith('/family-recipes/'))) {
+      sources.push(`${origin}/family-recipes/cookbook.svg`);
+    }
     // Try page-path specific favicon first (e.g., /Git_Cheat_Sheet/favicon.ico)
     const pageFavicon = `${origin}${pathname.replace(/\/$/, '')}/favicon.ico`;
     sources.push(pageFavicon);

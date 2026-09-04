@@ -115,6 +115,31 @@ describe('schedule internals', () => {
     expect(reg.date).toBe('2026-09-11T00:35:00.000Z');
   });
 
+  test('regular-season LOCAL availability does not replace the national network', () => {
+    const html = `
+      <a href="/games/49ers-at-rams-2026-reg-1"><span>View</span></a>
+      <time dateTime="2026-09-11T00:35:00.000Z"></time>
+      <span>NETFLIX</span>
+      <span>LOCAL</span>
+    `;
+
+    const [game] = internals.parseNflSchedulePage(html);
+
+    expect(game.channel).toBe('NETFLIX');
+  });
+
+  test('regular-season LOCAL availability alone is not treated as the network', () => {
+    const html = `
+      <a href="/games/49ers-at-rams-2026-reg-1"><span>View</span></a>
+      <time dateTime="2026-09-11T00:35:00.000Z"></time>
+      <span>LOCAL</span>
+    `;
+
+    const [game] = internals.parseNflSchedulePage(html);
+
+    expect(game.channel).toBe('TBD');
+  });
+
   test('validateScheduleData reports duplicates and invalid fields', () => {
     const issues = internals.validateScheduleData([
       {

@@ -250,7 +250,7 @@ const scheduleSource = {
   jsonUrl: "https://raw.githubusercontent.com/mevorahde/49ers-newtab/main/game-schedule.json",
   officialNflTeamScheduleUrl: "https://www.nfl.com/schedules/2026/by-team/san-francisco-49ers",
   cacheKey: "scheduleCache",
-  cacheVersion: 2,
+  cacheVersion: 3,
   lastCheckedKey: "scheduleLastChecked",
   weeklyCheckMs: 7 * 24 * 60 * 60 * 1000,
   expectedRegularGameCount: 17,
@@ -778,8 +778,17 @@ function parseNflSchedulePage(htmlText) {
     const date = dateMatch ? new Date(dateMatch[1]).toISOString() : null;
 
     const networkMatch = section.match(/alt="([^\"]+?) network logo"/i);
+    const networkTextMatch = section.match(
+      /\b(NETFLIX|PRIME VIDEO|NFL NETWORK|ESPN(?:\s*\/\s*ABC)?|ABC|NBC|CBS|FOX)\b/i
+    );
     const hasLocalLabel = /\bLOCAL\b/i.test(section);
-    const channel = networkMatch ? networkMatch[1].trim() : hasLocalLabel ? "LOCAL" : "TBD";
+    const channel = networkMatch
+      ? networkMatch[1].trim()
+      : networkTextMatch
+        ? networkTextMatch[1].replace(/\s*\/\s*/g, "/").trim()
+        : parsed.seasonType === "PRE" && hasLocalLabel
+          ? "LOCAL"
+          : "TBD";
 
     const logo = teamLogoUrl(parsed.opponent);
     const gameKey = `${parsed.seasonType}-${parsed.week}`;

@@ -137,8 +137,9 @@ weather, favorites, to-do behavior, and representative viewport layouts. See
 - The extension is a personal fan project and is not affiliated with or
   endorsed by the San Francisco 49ers or the NFL.
 
-## License status
+## License
 
-This repository does not currently include an open-source license. Public
-source availability permits review but does not grant general reuse or
-redistribution rights.
+The original software and documentation in this repository are available under
+the [MIT License](LICENSE). San Francisco 49ers and NFL names, trademarks,
+logos, schedule data, and other third-party material remain the property of
+their respective owners and are not granted under that license.

@@ -1,301 +1,144 @@
-# David's New Tab - 49ers Themed Browser Extension
+# David's New Tab
 
-A beautiful, fully-featured Chrome/Brave extension that replaces your new tab page with a personalized 49ers-themed dashboard.
+David's New Tab is a personal Chrome and Brave extension that replaces the
+browser's new-tab page with a San Francisco 49ers-themed dashboard. It combines
+a game countdown, weather, search, editable favorites, and a persistent to-do
+list in a dependency-free browser interface.
+
+The extension is distributed as source for manual installation; it is not
+published in a browser extension store.
 
 ## Features
 
-- **Personalized Welcome Header** - "WELCOME BACK, DAVID" in custom 49ers font
-- **Real-Time Date & Time** - Auto-updating with large, easy-to-read display (28px)
-- **49ers Game Countdown** - Displays days until the next 49ers game
-  - Includes **preseason + regular season** next-game logic
-  - Shows detailed game card when kickoff is within 7 days
-  - Shows a week badge (`PRESEASON WEEK X` / `WEEK X`) on the game card
-  - Shows `YYYY Season` in offseason/unknown-next-game periods
-- **Dynamic Weather Widget** - Current temperature, conditions, and your location
-  - Uses geolocation when available
-  - Falls back to IP-based location detection
-  - Real-time weather from Open-Meteo API
-  - Location reverse-geocoding via Nominatim
-- **Quick Search** - DuckDuckGo search directly from the new tab
-- **Favorites Grid** - One-click access to your most-visited sites
-  - **Right-click to edit or delete** - Context menu for managing favorites
-  - **Add new sites** - Plus button to add custom shortcuts
-  - **Auto-refresh favicons** - Dynamically fetches site icons
-  - **Persistent storage** - Favorites saved to local storage
-  - **Undo deletions** - Toast notification with undo option
-- **Interactive To-Do List** - Full CRUD operations with persistent storage
-  - **Drag-and-drop reordering** - Click and drag to reorganize tasks
-  - Click to mark complete/incomplete
-  - Local storage persistence across sessions
-  - **Inline editing** - Click a task to edit it in place; a small hint appears when editing is available
+- Personalized welcome, current date, and continuously updated clock.
+- Preseason and regular-season 49ers game countdown with game details near
+  kickoff.
+- Weather from Open-Meteo using browser geolocation or an IP-based fallback.
+- DuckDuckGo search from the new-tab page.
+- Editable favorites with favicon lookup, reordering, deletion, and undo.
+- To-do creation, inline editing, completion, deletion, and drag-and-drop
+  ordering.
+- Versioned schedule caching with validation and refresh diagnostics.
+- Local persistence for favorites, tasks, and schedule data.
 
-## Installation
+## Install locally
 
-1. **Clone or download this repository** to your computer
-2. **Open your browser** (Chrome or Brave)
-3. Navigate to `chrome://extensions/` or `brave://extensions/`
-4. **Enable "Developer mode"** (toggle in top right)
-5. Click **"Load unpacked"**
-6. Select this project folder
-7. Open a new tab to see your new dashboard!
+1. Clone or download this repository.
+2. Open `chrome://extensions/` in Chrome or `brave://extensions/` in Brave.
+3. Enable **Developer mode**.
+4. Select **Load unpacked** and choose the repository directory.
+5. Open a new tab.
 
-## Customization
+After changing extension files, use the extension page's reload control. Do not
+remove and reinstall the extension unless you intend to clear its extension
+storage.
 
-### Update Schedule Data
+## Privacy and network access
 
-Primary baseline schedule data lives in [game-schedule.json](game-schedule.json):
-- Supports `seasonType` (`PRE`/`REG`)
-- Includes opponent, kickoff date/time, location, channel, and logo
+Favorites and tasks remain in the browser's extension-local `localStorage`.
+The extension does not provide an account or synchronize that data between
+devices.
 
-At runtime, schedule data flows as:
-1. Load versioned cache from localStorage (if valid)
-2. Fetch baseline JSON from GitHub (`game-schedule.json`)
-3. Weekly (or when gaps/issues are detected), merge from official NFL team schedule HTML
+The dashboard can make requests to:
 
-Source + health diagnostics are logged in console as:
-- `[schedule] source=... games=... issues=... updated=...`
+- Open-Meteo for weather and geocoding;
+- Nominatim for reverse geocoding;
+- ipapi.co when browser geolocation is unavailable or denied;
+- this repository's raw `game-schedule.json` file;
+- the official NFL team schedule page for schedule updates; and
+- favicon sources for favorite-site icons.
 
-### Change Theme Colors
+Granting geolocation is optional. Denying it causes the weather feature to try
+the IP-based fallback, which shares the requester's IP address with that
+provider. Review `manifest.json` before installation for the complete extension
+permission and host-permission list.
 
-Edit hex color values in [style.css](style.css):
-- **Primary Red** (`#b30000`) - Headers, accents
-- **Dark Red** (`#7a0a0a`) - Text content
-- **Background** (`#faf6f0`) - Light beige
-- **Todo Box** (`#fff8f2`) - Off-white background
+## Schedule data
 
-### Manage Favorites
+The tracked baseline lives in [`game-schedule.json`](game-schedule.json). Each
+entry identifies its season type, opponent, kickoff time, location, channel,
+and logo. At runtime the extension validates cached data, loads the baseline,
+and periodically attempts to merge official schedule updates.
 
-Favorites are managed through the UI with a right-click context menu:
-1. **Add sites** - Click the "+" button to add a new favorite
-2. **Edit sites** - Right-click any favorite and select "Edit site"
-3. **Delete sites** - Right-click and select "Delete site" (undo available)
+Schedule diagnostics use this console format:
 
-Default favorites are defined in [script.js](script.js). You can modify this array to change the default shortcuts.
-
-Recent behavior and fixes:
-- **Favorites persistence fix**: favorites are now authoritative from the user's saved localStorage value. The code no longer re-merges the saved list with the built-in defaults on every load, so deletions now persist.
-- **Favicons**: Family Recipes shortcuts first use the project's own `cookbook.svg`, rather than the personal-site logo on the shared GitHub Pages domain. Other shortcuts retain the existing lookup sequence (page `/favicon.ico`, origin `/favicon.ico`, then provider services), with an inline SVG fallback when needed.
-- **After changing extension files**: open `brave://extensions/` (or `chrome://extensions/`), reload **David's New Tab**, then open a new tab. Do not remove/reinstall the extension or clear its storage; reloading preserves your saved favorites and tasks.
-- **Favicon refresh fix**: the favicon refresher now preserves existing query parameters and appends/updates a cache-busting `t=` timestamp parameter so icons refresh without breaking original URLs.
-- **Schedule resilience**: countdown now supports preseason + regular season, merges official NFL schedule updates, and validates schedule integrity (duplicate keys, invalid dates/logos, missing fields).
-- **Cache invalidation**: schedule cache is now versioned so incompatible/stale cache payloads are automatically discarded.
-- **Optional debug logs**: set `localStorage.debugMode = "true"` in DevTools to enable verbose weather/favicon logs.
-
-### Personalize the Welcome Message
-
-Edit the welcome text in [index.html](index.html#L17):
-```html
-<div class="welcome">WELCOME BACK, DAVID</div>
+```text
+[schedule] source=... games=... issues=... updated=...
 ```
 
-## Project Structure
+To discard only the schedule cache while troubleshooting, run this in the
+new-tab page's developer console:
 
-```
-49ers-newtab/
-├── manifest.json          # Extension configuration (Manifest v3)
-├── index.html             # Main new tab page HTML
-├── style.css              # 49ers color scheme & layout
-├── script.js              # JavaScript logic for all features
-├── fonts/
-│   └── sf-sports-night.ttf # Custom NinersBlock font
-├── icon.png               # Extension icon
-├── AGENTS.md              # Development guidelines
-└── README.md              # This file
-
-## Recent Changes (summary)
-
-- Switched quick search from Google to DuckDuckGo for privacy-focused searches. See `index.html` and `script.js`.
-- Fixed favorites deletion persistence so user deletions are retained across reloads.
-- Improved favicon loading logic to try multiple sources (page path, origin root, Google s2/DuckDuckGo providers) and added console diagnostics for debugging favicon loading.
-- Fixed favicon refresh logic to preserve existing URL params and append a cache-busting timestamp parameter.
-- Added inline editing to the todo list with a small UI hint when editing is available.
-- Weather provider/location behavior: implemented a "city-center" resolution option that resolves to a canonical city center (when enabled) and requests temperatures in Fahrenheit directly from Open-Meteo to reduce discrepancies with OS widgets.
-- Test scaffolding: added unit tests (Jest) and Playwright e2e tests with deterministic network mocks so schedule/weather tests do not rely on external services.
-
-## Testing & Development
-
-This project now includes a small test scaffold for deterministic unit and e2e tests.
-
-Install dependencies and Playwright browsers:
-
-```bash
-npm install
-npx playwright install
-```
-
-Run unit tests (Jest):
-
-```bash
-npm test
-# or
-npm run test:unit
-```
-
-Run Playwright e2e smoke tests:
-
-```bash
-npm run test:e2e
-```
-
-Run all tests:
-
-```bash
-npm run test:all
-```
-
-Notes about the tests:
-- Unit tests live under `tests/unit/`:
-  - `helpers.test.js` for generic helpers
-  - `schedule.test.js` for parser/key/sort/validation/offseason behavior
-  - `schedule-data.test.js` for `game-schedule.json` quality checks (unique keys, NFL logo URLs, PRE/REG presence)
-- Playwright e2e tests live under `tests/e2e/`:
-  - `smoke.spec.js` basic page boot + weather/favorites rendering
-  - `schedule-states.spec.js` preseason/regular week badge text, offseason `YYYY Season`, and above-the-fold layout checks for laptop/monitor viewports
-- E2E tests intercept weather/schedule requests and return canned responses for deterministic runs.
-- If you prefer to run the extension in a browser for manual testing, load the folder from `chrome://extensions` as described in the Installation section.
-
-Files of interest for developers:
-- `script.js` — core logic and recent fixes
-- `helpers.js` — small exported helpers used by unit tests
-- `game-schedule.json` — baseline schedule data (`PRE`/`REG` entries)
-- `tests/unit/` — Jest unit tests
-- `tests/e2e/` — Playwright smoke test with network mocks
-- `package.json` — test scripts: `test`, `test:unit`, `test:e2e`, `test:all`
-
-If you want me to add CI config (GitHub Actions) to run these tests automatically, I can scaffold that for you.
-```
-
-## Technical Details
-
-### Architecture
-
-- **Manifest V3** - Modern Chrome extension standard with security-first design
-- **Vanilla JavaScript** - No frameworks or build tools needed
-- **Local Storage** - Todo items persist across browser sessions
-- **Third-Party APIs**:
-  - [Open-Meteo](https://open-meteo.com/) - Weather data (no API key required)
-  - [Nominatim](https://nominatim.org/) - Reverse geocoding for location names
-  - [ipapi.co](https://ipapi.co/) - IP-based geolocation fallback
-
-### Key Functions
-
-| Function | Purpose |
-|----------|---------|
-| `getWeather()` | Fetches geolocation and weather data |
-| `updateDateTime()` | Updates date/time display every second |
-| `updateCountdown()` | Calculates and renders next-game countdown/card |
-| `parseNflSchedulePage()` | Parses official NFL by-team schedule HTML |
-| `checkScheduleUpdates()` | Handles weekly refresh/merge and cache updates |
-| `validateScheduleData()` | Detects duplicate/invalid schedule entries |
-| `renderTasks()` | Displays todo list with drag-and-drop support |
-| `saveTasks()` | Persists todo list to localStorage |
-
-### Permissions Required
-
-- **geolocation** - Fetches user's GPS coordinates (falls back to IP if denied)
-- **host_permissions** - Access to weather and geocoding APIs
-
-### Data Storage
-
-Todo items are stored in browser's `localStorage` under the key `"tasks"`:
 ```javascript
-[
-  { text: "Task description", completed: false },
-  { text: "Another task", completed: true }
-]
-```
-
-Schedule cache is stored in localStorage under `scheduleCache` with:
-- `version`
-- `season`
-- `source`
-- `issues`
-- `updatedAt`
-- `games`
-
-## Drag-and-Drop Todo Reordering
-
-Fully implemented with visual feedback:
-- **Hover** - Todo items show a lighter background
-- **Grab cursor** - Indicates the item is draggable
-- **Dragging** - Item becomes semi-transparent (50% opacity)
-- **Drop target** - Shows red highlight where the item will land
-- **Auto-save** - New order is saved to localStorage automatically
-
-## Browser Compatibility
-
-- ✅ Chrome 88+
-- ✅ Brave
-- ⚠️ Edge (should work, but not officially tested)
-- ❌ Firefox (requires WebExtensions conversion)
-- ❌ Safari (requires Safari App Extension conversion)
-
-## Troubleshooting
-
-### Weather Shows "Location Unavailable"
-
-1. Check browser console (F12 > Console tab)
-2. Verify geolocation permission is enabled in site settings
-3. Extension will automatically fall back to IP-based location
-4. Nominatim API may need a moment to reverse-geocode
-
-### Todo Items Not Persisting
-
-- Clear browser cache and reload extension
-- Check that localStorage is enabled in your browser
-- Verify you're on the actual new tab page (not a bookmarked version)
-
-### Font Not Displaying Correctly
-
-- Ensure `fonts/sf-sports-night.ttf` exists in the project folder
-- Reload the extension from `chrome://extensions/`
-
-### Schedule Looks Stale or Wrong
-
-1. Open DevTools Console on the new tab page
-2. Check `[schedule] source=... issues=...` log line
-3. Clear schedule cache and reload:
-
-```js
 localStorage.removeItem("scheduleCache");
 location.reload();
 ```
 
-## Development
+## Personalization
 
-The extension is production-ready and requires minimal maintenance:
-- Auto-updating weather fetches every hour
-- Favicon icons refresh every 5 minutes
-- Game countdown updates every hour
+- Change the welcome text in `index.html`.
+- Change the built-in favorite shortcuts in `script.js`.
+- Change the tracked baseline schedule in `game-schedule.json`.
+- Change theme colors and layout in `style.css`.
 
-### To Modify:
+Favorites edited through the interface become authoritative in local storage;
+the extension does not re-add deleted built-in favorites on every load.
 
-1. Edit files locally
-2. Go to `chrome://extensions/`
-3. Click the refresh icon for "David's New Tab"
-4. Open a new tab to see changes
+## Development and testing
 
-No build process or compilation needed!
+Install the locked development dependencies:
 
-## Font Information
+```bash
+npm ci
+npx playwright install
+```
 
-Uses **SF Sports Night** ("NinersBlock" alias) custom font for authentic 49ers branding. Font file included in `fonts/` directory.
+Run the unit tests, browser tests, or both:
 
-## Future Enhancement Ideas
+```bash
+npm run test:unit
+npm run test:e2e
+npm run test:all
+```
 
-- [ ] Weather forecast (5-day)
-- [ ] Customizable shortcuts/favorites limit
-- [ ] Dark mode toggle
-- [ ] Recent browsing history
-- [ ] Notes section
-- [ ] Calendar integration
-- [ ] Stock ticker
-- [ ] Custom background images
+Unit tests cover helpers, schedule behavior, and baseline schedule quality.
+Playwright tests use deterministic network mocks for startup, schedule states,
+weather, favorites, to-do behavior, and representative viewport layouts. See
+[`TESTING.md`](TESTING.md) for the detailed test inventory.
 
-## License
+## Project structure
 
-Personal project - feel free to modify for your own use!
+```text
+49ers-newtab/
+|-- manifest.json          Extension metadata and permissions
+|-- index.html             New-tab document
+|-- style.css              Layout and theme
+|-- script.js              Dashboard and persistence behavior
+|-- helpers.js             Testable utility functions
+|-- game-schedule.json     Versioned baseline schedule
+|-- tests/unit/            Jest tests
+|-- tests/e2e/             Playwright tests
+|-- fonts/                 Local display font
+|-- icon.png               Extension icon
+`-- background.png         Dashboard artwork
+```
 
----
+## Known limitations
 
-**Created for 49ers fans** ⚫🔴 • Built with vanilla JavaScript • Made with ❤️
+- Chrome and Brave are the manually supported browsers. Edge may work but is
+  not part of the documented test target; Firefox and Safari require platform
+  adaptation.
+- Schedule updates depend on the structure and availability of third-party
+  pages and may require a tracked baseline update.
+- Weather and favicon providers can be unavailable, rate-limited, or return
+  results that differ from another weather or icon service.
+- Browser-local data can be lost if extension storage is cleared or the
+  extension is removed.
+- The extension is a personal fan project and is not affiliated with or
+  endorsed by the San Francisco 49ers or the NFL.
+
+## License status
+
+This repository does not currently include an open-source license. Public
+source availability permits review but does not grant general reuse or
+redistribution rights.

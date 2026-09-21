@@ -9,9 +9,9 @@
     "test:all": "npm run test && npm run test:e2e"
   },
   "devDependencies": {
-    "jest": "^29.6.1",
-    "jest-environment-jsdom": "^30.4.1",
-    "playwright": "^1.60.0",
-    "@playwright/test": "^1.60.0"
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
+    "playwright": "^1.63.0",
+    "@playwright/test": "^1.63.0"
   }
 }
